@@ -1,0 +1,2793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdBrained — Sprint Namer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #0a0a0a;
+      --card:   #111;
+      --border: #222;
+      --lime:   #c8f23e;
+      --pink:   #ff2d78;
+      --yellow: #ffd60a;
+      --text:   #f0ede6;
+      --muted:  #444;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* subtle grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    /* ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background:
+        radial-gradient(ellipse at 15% 60%, rgba(200,242,62,0.05) 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 15%, rgba(255,45,120,0.04) 0%, transparent 45%);
+      animation: bgDrift 14s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes bgDrift {
+      from { transform: translate(0,0); }
+      to   { transform: translate(-3%,-2%); }
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+      padding: 2.5rem 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .screen { display: none; animation: fadeUp 0.35s cubic-bezier(0.22,1,0.36,1); }
+    .screen.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Logo ── */
+    .logo {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--lime);
+      margin-bottom: 2.5rem;
+      display: inline-block;
+    }
+
+    /* ── Intro ── */
+    .intro-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--lime);
+      border: 1.5px solid rgba(200,242,62,0.35);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    .intro-heading {
+      font-size: clamp(3rem, 13vw, 5.5rem);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.25rem;
+    }
+
+    .intro-heading em {
+      font-style: italic;
+      font-family: 'DM Serif Display', serif;
+      font-weight: 400;
+      color: var(--lime);
+      font-size: 1.08em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+      max-width: 360px;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: var(--lime);
+      color: #0a0a0a;
+      border: none;
+      padding: 1rem 2rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 28px rgba(200,242,62,0.3);
+    }
+
+    .btn-primary:active { transform: translateY(0) scale(0.98); }
+
+    .btn-secondary {
+      flex: 1;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      padding: 0.8rem 0.75rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--lime);
+      color: var(--lime);
+      background: rgba(200,242,62,0.04);
+    }
+
+    /* ── Progress ── */
+    .progress-bar { display: flex; gap: 6px; margin-bottom: 2.5rem; }
+
+    .progress-dot {
+      height: 3px;
+      flex: 1;
+      border-radius: 2px;
+      background: var(--border);
+      transition: background 0.4s;
+    }
+
+    .progress-dot.done { background: var(--lime); }
+
+    /* ── Questions ── */
+    .question-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--lime);
+      margin-bottom: 0.5rem;
+    }
+
+    .question-text {
+      font-size: clamp(1.6rem, 5.5vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.75rem;
+    }
+
+    .options { display: flex; flex-direction: column; gap: 0.55rem; }
+
+    .option-btn {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      padding: 1rem 1.25rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 400;
+      border-radius: 14px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.14s, color 0.14s, transform 0.14s cubic-bezier(0.34,1.56,0.64,1), background 0.14s;
+      line-height: 1.4;
+    }
+
+    .option-btn:hover {
+      border-color: var(--lime);
+      color: var(--lime);
+      background: rgba(200,242,62,0.04);
+      transform: translateX(7px);
+    }
+
+    .option-btn:active { transform: translateX(3px) scale(0.99); }
+
+    /* ── Loading ── */
+    .loading-container { text-align: center; padding: 4rem 0 3rem; }
+
+    .bird-spinner {
+      font-size: 4.5rem;
+      display: block;
+      margin-bottom: 2rem;
+      animation: wobble 0.55s ease-in-out infinite alternate;
+    }
+
+    @keyframes wobble {
+      from { transform: rotate(-10deg) scale(0.93); }
+      to   { transform: rotate(10deg)  scale(1.07); }
+    }
+
+    .loading-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.6rem;
+    }
+
+    .loading-subtext {
+      font-size: 0.82rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+
+    /* ── Sprint Card ── */
+    #sprint-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+
+    .card-top {
+      background: var(--lime);
+      padding: 0.8rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-brand {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.7);
+    }
+
+    .card-season {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: rgba(0,0,0,0.45);
+    }
+
+    .card-image-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      position: relative;
+      background: #0a0a0a;
+      overflow: hidden;
+    }
+
+    .card-image-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .img-loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .spinner-ring {
+      width: 40px; height: 40px;
+      border: 2px solid rgba(200,242,62,0.15);
+      border-top-color: var(--lime);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .card-body { padding: 1.4rem 1.5rem 1.2rem; }
+
+    .bird-sprint-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .bird-name-big {
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(2.4rem, 9vw, 3.6rem);
+      line-height: 1;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .bird-giving-line {
+      font-size: 0.95rem;
+      color: var(--pink);
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .bird-description {
+      font-size: 0.88rem;
+      line-height: 1.8;
+      color: #888;
+    }
+
+    .card-footer {
+      padding: 0.85rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sprint-hashtag {
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: var(--lime);
+      color: #0a0a0a;
+      padding: 0.28rem 0.75rem;
+      border-radius: 100px;
+      letter-spacing: 0.02em;
+    }
+
+    .card-watermark {
+      font-size: 0.68rem;
+      color: #2a2a2a;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Action Row ── */
+    .action-row { display: flex; gap: 0.55rem; }
+
+    /* ── Screenshot Mode ── */
+    body.screenshot-mode { align-items: flex-start; background: #000; }
+    body.screenshot-mode .container > *:not(#screen-result) { display: none !important; }
+    body.screenshot-mode #screen-result  { display: block !important; }
+    body.screenshot-mode .result-grid    { display: block !important; }
+    body.screenshot-mode .result-panel-facts,
+    body.screenshot-mode .result-panel-actions { display: none !important; }
+    body.screenshot-mode .result-action-stack { display: none !important; }
+    body.screenshot-mode #result-logo    { display: none !important; }
+    body.screenshot-mode #sprint-card    { border-radius: 0; box-shadow: none; margin-bottom: 0; }
+
+    /* ── Floating exit btn ── */
+    #exit-card-btn {
+      display: none;
+      position: fixed;
+      top: 1rem; right: 1rem;
+      z-index: 9999;
+      background: rgba(200,242,62,0.15);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid rgba(200,242,62,0.4);
+      color: var(--lime);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.5rem 1rem;
+      border-radius: 100px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.15s;
+    }
+
+    #exit-card-btn:hover { background: rgba(200,242,62,0.25); }
+    body.screenshot-mode #exit-card-btn { display: block; }
+
+    /* ── Reveal ── */
+    @keyframes revealCard {
+      0%   { opacity: 0; transform: scale(0.88) translateY(24px); }
+      65%  { transform: scale(1.03) translateY(-3px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .reveal-anim { animation: revealCard 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .container { padding: 1.75rem 1rem; }
+      .intro-heading { font-size: 2.8rem; }
+    }
+
+    /* ── Optional context screen ── */
+    .context-textarea {
+      width: 100%;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      padding: 1rem 1.25rem;
+      border-radius: 14px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 0.35rem;
+    }
+    .context-textarea:focus { border-color: rgba(200,242,62,0.5); }
+    .context-textarea::placeholder { color: var(--muted); }
+
+    .context-char-count {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+      margin-bottom: 1.5rem;
+    }
+
+    .context-emoji-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .emoji-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .emoji-opt {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 1.5rem;
+      padding: 0.5rem 0.65rem;
+      cursor: pointer;
+      transition: border-color 0.14s, transform 0.14s cubic-bezier(0.34,1.56,0.64,1), background 0.14s;
+      line-height: 1;
+    }
+    .emoji-opt:hover { border-color: rgba(200,242,62,0.5); transform: scale(1.12); }
+    .emoji-opt.selected {
+      border-color: var(--lime);
+      background: rgba(200,242,62,0.1);
+      transform: scale(1.1);
+    }
+
+    .context-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    /* ── Result 3-panel grid ── */
+    .result-grid {
+      width: 100%;
+    }
+
+    .result-panel { margin-bottom: 1.5rem; }
+
+    .panel-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .bird-facts {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .bird-facts li {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #888;
+      padding-left: 1.1rem;
+      position: relative;
+    }
+
+    .bird-facts li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--lime);
+      font-size: 0.75rem;
+      top: 0.1em;
+    }
+
+    .sprint-recap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+    }
+
+    .sprint-recap-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.8rem;
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 0.4rem;
+    }
+    .sprint-recap-row:last-child { margin-bottom: 0; }
+    .sprint-recap-row strong { color: var(--muted); white-space: nowrap; }
+
+    .sprint-copy-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.65rem 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sprint-copy-val {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.14s, color 0.14s;
+    }
+    .copy-btn:hover { border-color: var(--lime); color: var(--lime); }
+    .copy-btn.copied { border-color: var(--lime); color: var(--lime); }
+
+    .result-action-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+    }
+
+    .result-action-stack .btn-secondary {
+      flex: none;
+      width: 100%;
+    }
+
+    /* ── Anime art panel ── */
+    .anime-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #0a0a0a;
+      border: 1.5px solid var(--border);
+    }
+
+    .anime-loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: #0a0a0a;
+      z-index: 2;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    #anime-loading-prompt {
+      font-size: 0.65rem;
+      color: rgba(200,242,62,0.35);
+      line-height: 1.5;
+      max-width: 220px;
+      font-style: italic;
+      min-height: 2em;
+    }
+
+    #anime-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .anime-prompt-tag {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0.5rem 0.75rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+      font-size: 0.65rem;
+      color: rgba(200,242,62,0.6);
+      letter-spacing: 0.06em;
+      line-height: 1.5;
+      z-index: 3;
+      display: none;
+    }
+
+    /* Desktop 3-col result */
+    @media (min-width: 900px) {
+      body { align-items: flex-start; }
+
+      .container {
+        width: 100%;
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 3rem 3rem;
+      }
+
+      /* Quiz screens stay narrow and centered */
+      #screen-intro,
+      #screen-q1,
+      #screen-q2,
+      #screen-q3,
+      #screen-context,
+      #screen-loading {
+        max-width: 560px;
+        margin: 0 auto;
+      }
+
+      /* Result: full width, grid lives on .result-grid */
+      #screen-result.active { display: block !important; }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px 1fr;
+        grid-template-rows: auto;
+        gap: 2.5rem;
+        align-items: start;
+        padding-top: 2rem;
+        width: 100%;
+      }
+
+      .result-panel { margin-bottom: 0; }
+      .result-panel-facts   { grid-column: 1; grid-row: 1; padding-top: 0.5rem; }
+      .result-panel-card    { grid-column: 2; grid-row: 1; }
+      .result-panel-actions { grid-column: 3; grid-row: 1; padding-top: 0.5rem; }
+      #sprint-card { margin-bottom: 0; }
+    }
+
+    @media (min-width: 1200px) {
+      .container { padding: 3rem 4rem; }
+      .result-grid { grid-template-columns: 1fr 400px 1fr; gap: 3rem; }
+    }
+
+    @media print {
+      body { background: #000; }
+      .action-row, #result-logo { display: none !important; }
+    }
+
+    /* ── Intro: floating deco bird ── */
+    #screen-intro { position: relative; overflow: hidden; }
+
+    .intro-deco {
+      position: absolute;
+      font-size: 18rem;
+      top: -3rem;
+      right: -4rem;
+      opacity: 0.05;
+      transform: rotate(-18deg);
+      pointer-events: none;
+      user-select: none;
+      line-height: 1;
+      filter: grayscale(1);
+    }
+
+    .intro-divider {
+      width: 40px;
+      height: 2px;
+      background: var(--lime);
+      opacity: 0.5;
+      margin: 1.75rem 0;
+    }
+
+    /* ── Intro: bird ticker ── */
+    .ticker-wrap {
+      margin-top: 2.5rem;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+      mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    }
+
+    .ticker-track {
+      display: inline-flex;
+      white-space: nowrap;
+      animation: tickerScroll 32s linear infinite;
+    }
+
+    .ticker-track span {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(200,242,62,0.25);
+      padding: 0 1.5rem;
+    }
+
+    @keyframes tickerScroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── Questions: giant bg number ── */
+    .screen-q { position: relative; overflow: hidden; }
+
+    .q-bg-num {
+      position: absolute;
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: clamp(10rem, 42vw, 16rem);
+      font-weight: 400;
+      color: rgba(200,242,62,0.04);
+      top: -1.5rem;
+      right: -0.5rem;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      letter-spacing: -0.04em;
+    }
+
+    /* ── Card: portrait image ── */
+    .card-image-wrap { aspect-ratio: 4/5; }
+
+    /* ── Loading: bigger/bolder ── */
+    .bird-spinner { font-size: 6rem; margin-bottom: 2.5rem; }
+    .loading-text { font-size: 1.4rem; }
+
+    /* ── Result: name can run big ── */
+    .bird-name-big { font-size: clamp(2.6rem, 10vw, 4rem); }
+
+    /* ── "it's giving" highlight bar ── */
+    .bird-giving-line {
+      display: inline-block;
+      background: rgba(255,45,120,0.1);
+      border-left: 3px solid var(--pink);
+      padding: 0.3rem 0.75rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+<button id="exit-card-btn" onclick="toggleScreenshot()">✕ exit card view</button>
+<div class="container">
+
+  <!-- ═══ INTRO ═══ -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-deco" aria-hidden="true">🦤</div>
+    <div class="logo">🐦 BirdBrained</div>
+    <div class="intro-badge">✦ sprint namer ✦</div>
+    <h1 class="intro-heading">find your<br><em>sprint bird.</em></h1>
+    <div class="intro-divider"></div>
+    <p class="subtitle">
+      three questions. one bird. zero spreadsheets.<br>
+      no cap this is the most scientific sprint naming system ever devised.
+    </p>
+    <button class="btn-primary" onclick="showScreen('screen-q1')">start the vibe check →</button>
+    <div class="ticker-wrap" aria-hidden="true">
+      <div class="ticker-track">
+        <span>🦅 Peregrine</span><span>🦤 Cassowary</span><span>🦩 Flamingo</span><span>🦚 Peacock</span><span>🐦 Shoebill</span><span>🦜 Kakapo</span><span>🦉 Great Horned Owl</span><span>🐧 Emperor Penguin</span><span>🦅 Harpy Eagle</span><span>🦢 Albatross</span><span>🦆 Mandarin Duck</span><span>🐦 Potoo</span><span>🦜 Lyrebird</span><span>🦩 Roseate Spoonbill</span><span>🦤 Emu</span><span>🦅 Secretary Bird</span>
+        <span>🦅 Peregrine</span><span>🦤 Cassowary</span><span>🦩 Flamingo</span><span>🦚 Peacock</span><span>🐦 Shoebill</span><span>🦜 Kakapo</span><span>🦉 Great Horned Owl</span><span>🐧 Emperor Penguin</span><span>🦅 Harpy Eagle</span><span>🦢 Albatross</span><span>🦆 Mandarin Duck</span><span>🐦 Potoo</span><span>🦜 Lyrebird</span><span>🦩 Roseate Spoonbill</span><span>🦤 Emu</span><span>🦅 Secretary Bird</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div id="screen-q1" class="screen screen-q">
+    <div class="q-bg-num" aria-hidden="true">01</div>
+    <div class="logo">🐦 BirdBrained</div>
+    <div class="progress-bar">
+      <div class="progress-dot done"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+    </div>
+    <div class="question-label">question 1 of 3</div>
+    <h2 class="question-text">what's the sprint energy rn?</h2>
+    <div class="options">
+      <button class="option-btn" onclick="answer('q1',['chaotic','energetic','loud','unhinged'])">⚡ chaotic but make it fashion</button>
+      <button class="option-btn" onclick="answer('q1',['focused','precise','fast','intense'])">🎯 locked in. total tunnel vision. do not disturb.</button>
+      <button class="option-btn" onclick="answer('q1',['chill','calm','patient','elegant'])">🌊 go with the flow. unbothered era.</button>
+      <button class="option-btn" onclick="answer('q1',['intense','powerful','determined','persistent'])">🔥 we're gonna suffer but it'll be worth it</button>
+      <button class="option-btn" onclick="answer('q1',['mysterious','nocturnal','hidden','weird'])">🌙 mysterious. nobody fully knows what's happening.</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div id="screen-q2" class="screen screen-q">
+    <div class="q-bg-num" aria-hidden="true">02</div>
+    <div class="logo">🐦 BirdBrained</div>
+    <div class="progress-bar">
+      <div class="progress-dot done"></div>
+      <div class="progress-dot done"></div>
+      <div class="progress-dot"></div>
+    </div>
+    <div class="question-label">question 2 of 3</div>
+    <h2 class="question-text">team mood check. be honest.</h2>
+    <div class="options">
+      <button class="option-btn" onclick="answer('q2',['energetic','colorful','loud','hyped','chaotic'])">🤩 literally vibrating. we are SO ready.</button>
+      <button class="option-btn" onclick="answer('q2',['determined','persistent','tired','powerful'])">😤 exhausted but we will NOT be stopped</button>
+      <button class="option-btn" onclick="answer('q2',['chill','elegant','calm','beautiful'])">😌 unbothered. calm. collected. it's giving zen.</button>
+      <button class="option-btn" onclick="answer('q2',['chaotic','weird','unhinged','nocturnal'])">🤪 fully unhinged (affectionately)</button>
+      <button class="option-btn" onclick="answer('q2',['focused','fast','precise','intense'])">🫡 in the zone. do not talk to us. seriously.</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div id="screen-q3" class="screen screen-q">
+    <div class="q-bg-num" aria-hidden="true">03</div>
+    <div class="logo">🐦 BirdBrained</div>
+    <div class="progress-bar">
+      <div class="progress-dot done"></div>
+      <div class="progress-dot done"></div>
+      <div class="progress-dot done"></div>
+    </div>
+    <div class="question-label">question 3 of 3</div>
+    <h2 class="question-text">what kind of sprint is this?</h2>
+    <div class="options">
+      <button class="option-btn" onclick="answer('q3',['feature','colorful','powerful','bold','loud'])">🚀 big feature drop — main character arc</button>
+      <button class="option-btn" onclick="answer('q3',['bugfix','fast','precise','persistent','focused'])">🐛 squashing bugs — full villain era</button>
+      <button class="option-btn" onclick="answer('q3',['debt','determined','patient','cleanup','persistent'])">🧹 tech debt — boring but necessary king behavior</button>
+      <button class="option-btn" onclick="answer('q3',['discovery','curious','mysterious','research','weird'])">🔍 discovery / research — we're just asking questions</button>
+      <button class="option-btn" onclick="answer('q3',['infra','hidden','nocturnal','cleanup','determined'])">🔧 infrastructure — unsung hero era. underworld work.</button>
+    </div>
+  </div>
+
+  <!-- ═══ CONTEXT (optional) ═══ -->
+  <div id="screen-context" class="screen screen-q">
+    <div class="logo">🐦 BirdBrained</div>
+    <div class="progress-bar">
+      <div class="progress-dot done"></div>
+      <div class="progress-dot done"></div>
+      <div class="progress-dot done"></div>
+    </div>
+    <div class="question-label">optional · skip anytime</div>
+    <h2 class="question-text">give the birds more context.</h2>
+    <textarea id="context-desc" class="context-textarea" placeholder="describe the sprint in your own words — what are you building, what's the chaos level, any relevant vibes... (optional)" maxlength="280" rows="3" oninput="document.getElementById('char-count').textContent=this.value.length"></textarea>
+    <div class="context-char-count"><span id="char-count">0</span>/280</div>
+    <div class="context-emoji-label">pick a vibe emoji</div>
+    <div class="emoji-grid" id="emoji-grid">
+      <button class="emoji-opt" data-tags="intense,powerful,determined" onclick="selectEmoji(this)">🔥</button>
+      <button class="emoji-opt" data-tags="chaotic,intense,weird" onclick="selectEmoji(this)">💀</button>
+      <button class="emoji-opt" data-tags="elegant,beautiful,colorful" onclick="selectEmoji(this)">✨</button>
+      <button class="emoji-opt" data-tags="chill,calm,patient" onclick="selectEmoji(this)">🌊</button>
+      <button class="emoji-opt" data-tags="fast,energetic,chaotic" onclick="selectEmoji(this)">⚡</button>
+      <button class="emoji-opt" data-tags="nocturnal,mysterious,hidden" onclick="selectEmoji(this)">🌙</button>
+      <button class="emoji-opt" data-tags="focused,precise,fast" onclick="selectEmoji(this)">🎯</button>
+      <button class="emoji-opt" data-tags="weird,chaotic,unhinged" onclick="selectEmoji(this)">🤪</button>
+      <button class="emoji-opt" data-tags="debt,cleanup,determined" onclick="selectEmoji(this)">🧹</button>
+      <button class="emoji-opt" data-tags="feature,powerful,colorful" onclick="selectEmoji(this)">🚀</button>
+    </div>
+    <div class="context-actions">
+      <button class="btn-secondary" style="flex:1" onclick="submitContext(true)">skip → fate decides</button>
+      <button class="btn-primary" onclick="submitContext(false)">find my bird →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LOADING ═══ -->
+  <div id="screen-loading" class="screen">
+    <div class="logo">🐦 BirdBrained</div>
+    <div class="loading-container">
+      <span class="bird-spinner" id="loading-emoji">🦅</span>
+      <p class="loading-text">consulting the birds...</p>
+      <p class="loading-subtext" id="loading-sub">cross-referencing your vibes with the bird council</p>
+    </div>
+  </div>
+
+  <!-- ═══ RESULT ═══ -->
+  <div id="screen-result" class="screen">
+    <div class="result-grid">
+
+      <!-- Left panel: bird intel -->
+      <div class="result-panel result-panel-facts">
+        <div class="panel-label">bird intel</div>
+        <ul class="bird-facts" id="bird-facts"></ul>
+        <div class="panel-label" style="margin-top:1.25rem">your answers</div>
+        <div class="sprint-recap" id="sprint-recap"></div>
+      </div>
+
+      <!-- Center panel: sprint card -->
+      <div class="result-panel result-panel-card">
+        <div class="logo" id="result-logo">🐦 BirdBrained</div>
+        <div id="sprint-card">
+          <div class="card-top">
+            <span class="card-brand">🐦 BirdBrained</span>
+            <span class="card-season" id="card-season">Sprint</span>
+          </div>
+          <div class="card-image-wrap" id="card-image-wrap">
+            <div class="img-loader" id="img-loader">
+              <div class="spinner-ring"></div>
+              <span style="color:var(--muted);font-size:0.82rem;">generating bird portrait...</span>
+            </div>
+            <img id="bird-img" alt="your sprint bird" />
+          </div>
+          <div class="card-body">
+            <div class="bird-sprint-label">ur sprint bird fr</div>
+            <div class="bird-name-big" id="bird-name-big"></div>
+            <div class="bird-giving-line" id="bird-giving-line"></div>
+            <p class="bird-description" id="bird-description"></p>
+          </div>
+          <div class="card-footer">
+            <span class="sprint-hashtag" id="sprint-hashtag">#SprintBird</span>
+            <span class="card-watermark">birdbrained.app</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right panel: anime art + sprint kit -->
+      <div class="result-panel result-panel-actions">
+        <div class="panel-label">sprint art</div>
+        <div class="anime-wrap" id="anime-wrap">
+          <div class="anime-loader" id="anime-loader">
+            <div class="spinner-ring"></div>
+            <span>painting your sprint...</span>
+          </div>
+          <img id="anime-img" alt="sprint anime art" />
+          <div class="anime-prompt-tag" id="anime-prompt-tag"></div>
+        </div>
+        <div class="panel-label" style="margin-top:1.5rem">sprint kit</div>
+        <div class="sprint-copy-row">
+          <span class="sprint-copy-val" id="copy-name-val">—</span>
+          <button class="copy-btn" data-label="copy name" onclick="copyText('copy-name-val', this)">copy name</button>
+        </div>
+        <div class="sprint-copy-row">
+          <span class="sprint-copy-val" id="copy-tag-val">#SprintBird</span>
+          <button class="copy-btn" data-label="copy tag" onclick="copyText('copy-tag-val', this)">copy tag</button>
+        </div>
+        <div class="result-action-stack">
+          <button class="btn-secondary" onclick="reroll()">🎲 reroll bird</button>
+          <button class="btn-secondary" onclick="toggleScreenshot()">📸 card view</button>
+          <button class="btn-secondary" onclick="resetAll()">↩ start over</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /.container -->
+<script>
+// ═══════════════════════════════════════════════
+//  BIRD DATA
+//
+//  HOW TO ADD A NEW BIRD — minimum required fields:
+//  {
+//    id:     'unique_snake_case',          // e.g. 'snowy_owl'
+//    name:   'Display Name',              // e.g. 'Snowy Owl'
+//    giving: "it's giving ...",           // GenZ one-liner
+//    desc:   "Sprint description.",       // 2–3 sentences, personality
+//    tags:   ['tag1','tag2','tag3'],      // used for quiz matching (see tag list below)
+//    // wikiTitle: 'Wikipedia Article'   // OPTIONAL — only if name ≠ Wikipedia page title
+//  }
+//
+//  AVAILABLE TAGS (use any combo):
+//  energy:  chaotic | focused | chill | intense | mysterious
+//  mood:    energetic | determined | elegant | weird | fast | loud | patient | nocturnal
+//  type:    feature | bugfix | debt | discovery | infra
+//  flavour: colorful | powerful | precise | hidden | beautiful | scrappy | rare | dino
+// ═══════════════════════════════════════════════
+const BIRDS = [
+  {
+    id: 'cassowary',
+    name: 'Cassowary',
+    giving: "it's giving ancient, unhinged danger",
+    desc: "You're not here to make friends. This sprint is primal, powerful, and slightly terrifying. The Cassowary doesn't know the word 'blocker' — it IS the blocker. Third tallest bird on Earth. Has a casque on its head for unclear reasons. Respect the process. Fear the deadline.",
+    tags: ['chaotic','intense','powerful','feature','weird','dino'],
+  },
+  {
+    id: 'shoebill',
+    name: 'Shoebill',
+    giving: "it's giving unblinking senior engineer",
+    desc: "The Shoebill has seen things. It will stand completely still for six hours before striking with perfect precision. This sprint is quiet, deliberate, and when it moves, it MOVES. Everyone else is scared of it and that's correct.",
+    tags: ['focused','mysterious','intense','patient','dino','discovery'],
+  },
+  {
+    id: 'secretary_bird',
+    name: 'Secretary Bird',
+    giving: "it's giving corporate assassin in heels",
+    desc: "Walks the savanna stomping snakes to death with power legs. Somehow wears its feathers like a pinstriped suit with a crest like a quill pen behind the ear. This sprint has executive function AND executive presence. Your blockers will be kicked.",
+    tags: ['focused','intense','powerful','feature','determined','dino'],
+  },
+  {
+    id: 'emu',
+    name: 'Emu',
+    giving: "it's giving lost the war (and fully thriving)",
+    desc: "Historically defeated in The Great Emu War of 1932 when Australia sent soldiers against them. The emus won. The Emu sprint knows obstacles are coming and simply... keeps walking forward. You cannot stop the Emu. Australia tried.",
+    tags: ['chaotic','determined','weird','infra','dino','chill'],
+  },
+  {
+    id: 'ostrich',
+    name: 'Ostrich',
+    giving: "it's giving head down, full execution mode",
+    desc: "Fastest land bird alive — 45mph. Does NOT bury its head in the sand, that's a myth propagated by people who fear commitment. The Ostrich sprint is about pure execution at full speed. Scope is locked. Communication is minimal. Let's GO.",
+    tags: ['fast','focused','determined','infra','powerful','dino'],
+  },
+  {
+    id: 'southern_ground_hornbill',
+    name: 'Southern Ground Hornbill',
+    giving: "it's giving old money danger, no rush",
+    desc: "Slow. Deliberate. Lives 60+ years. Has a call that carries 10km. The Southern Ground Hornbill sprint is methodical and deeply consequential. It will not be rushed. Every ticket in this sprint was worth doing and everyone secretly knew it.",
+    tags: ['determined','patient','debt','powerful','mysterious','dino'],
+  },
+  {
+    id: 'potoo',
+    name: 'Great Potoo',
+    giving: "it's giving existential screaming (but make it chic)",
+    desc: "Looks like it just received news it wasn't ready for. The Great Potoo is a master of disguise that somehow always ends up visible anyway. This sprint is giving 'trying to appear normal but we all know'. Nocturnal. Chaotic. Iconic.",
+    tags: ['weird','chaotic','nocturnal','mysterious','unhinged','bugfix'],
+  },
+  {
+    id: 'kakapo',
+    name: 'Kakapo',
+    giving: "it's giving critically endangered chaos goblin",
+    desc: "World's only flightless parrot. Nocturnal. Nearly extinct. Extremely rare. Has a boom system where it inflates itself and calls from a bowl it dug. This sprint is so singular that future generations will tell stories about it.",
+    tags: ['weird','chaotic','nocturnal','discovery','unhinged','rare'],
+  },
+  {
+    id: 'peregrine_falcon',
+    name: 'Peregrine Falcon',
+    giving: "it's giving terminal velocity productivity",
+    desc: "Fastest animal on the planet at 240mph in a dive. No meetings that could be emails. No unnecessary review cycles mid-stoop. The Peregrine sprint is clean, precise, and over before anyone realized what was happening.",
+    tags: ['focused','fast','precise','feature','bugfix','intense'],
+  },
+  {
+    id: 'harpy_eagle',
+    name: 'Harpy Eagle',
+    giving: "it's giving apex predator, main character",
+    desc: "Largest, most powerful eagle on Earth. Talons the size of grizzly bear claws. The Harpy Eagle sprint has enormous scope, maximum impact, and a wingspan that casts a shadow over everything else on the roadmap.",
+    tags: ['powerful','intense','feature','chaotic','loud','dino'],
+  },
+  {
+    id: 'flamingo',
+    name: 'Flamingo',
+    giving: "it's giving resort era, everything is fine",
+    desc: "Standing on one leg because frankly two legs is too much commitment. Pink from the inside out due to diet. The Flamingo sprint looks effortless from the outside, but the algorithm running underneath is surprisingly complex. It's giving coping.",
+    tags: ['chill','elegant','colorful','discovery','calm','beautiful'],
+  },
+  {
+    id: 'peacock',
+    wikiTitle: 'Indian peafowl',
+    name: 'Peacock',
+    giving: "it's giving main character energy, no notes",
+    desc: "Why ship a feature quietly when you can ship it with 200 iridescent feathers fanned out behind you? The Peacock sprint understands that presentation is half the delivery. Demo day will be an event. Invite stakeholders.",
+    tags: ['loud','colorful','energetic','feature','bold','chaotic','hyped'],
+  },
+  {
+    id: 'toucan',
+    name: 'Keel-billed Toucan',
+    giving: "it's giving tropical maximalist, served fresh",
+    desc: "Has a beak that is one-third of its body length just because it could. This sprint said more is more and we are HERE for it. Big scope, big colors, big features, and absolutely no feedback on the color scheme because it's perfect.",
+    tags: ['colorful','loud','chaotic','feature','energetic','hyped'],
+  },
+  {
+    id: 'hummingbird',
+    name: 'Ruby-throated Hummingbird',
+    giving: "it's giving speed run, 100% completion",
+    desc: "Heart beats 1,200 times per minute. Wings beat 80 times per second. The Hummingbird sprint moves so fast that slow-motion replays are required to understand what actually shipped. Unmatched velocity. Tiny but mighty.",
+    tags: ['fast','focused','intense','feature','energetic','precise'],
+  },
+  {
+    id: 'crow',
+    name: 'Crow',
+    giving: "it's giving dark academia mastermind",
+    desc: "Crows remember individual human faces. They hold grudges for years. They also leave gifts for people they like. This sprint is intelligent, slightly gothic, and WILL find the optimal solution while quietly judging everyone else's approach.",
+    tags: ['focused','mysterious','smart','discovery','nocturnal','determined'],
+  },
+  {
+    id: 'raven',
+    name: 'Common Raven',
+    giving: "it's giving gothic genius, understands the assignment",
+    desc: "Top 5 most intelligent animals on Earth. Can plan for the future, solve puzzles, and understand cause and effect. The Raven sprint has done the prep work. It knows what's coming. It's three steps ahead. Trust the process.",
+    tags: ['mysterious','focused','discovery','nocturnal','powerful','smart'],
+  },
+  {
+    id: 'owl_great_horned',
+    wikiTitle: 'Great horned owl',
+    name: 'Great Horned Owl',
+    giving: "it's giving 3am enlightenment",
+    desc: "Apex predator of the night sky. Knows things you don't know. Has been watching since before you were in the building. The Great Horned Owl sprint holds the accumulated wisdom of every previous sprint and deploys it ruthlessly at 3am.",
+    tags: ['nocturnal','mysterious','focused','powerful','discovery','wise'],
+  },
+  {
+    id: 'snowy_owl',
+    name: 'Snowy Owl',
+    giving: "it's giving ethereal, untouchable, iconic",
+    desc: "Pure white, completely silent in flight, visible for kilometers. The Snowy Owl sprint looks impossible from the outside and then simply delivers, without ceremony, without explanation. The team is left wondering how it happened.",
+    tags: ['calm','elegant','mysterious','focused','nocturnal','infra'],
+  },
+  {
+    id: 'barn_owl',
+    name: 'Barn Owl',
+    giving: "it's giving silent but absolutely lethal",
+    desc: "Hunts in complete darkness using hearing alone. Zero margin for error, zero noise. The Barn Owl sprint operates on intuition and extremely good pattern recognition. Nobody sees it coming. It ships at 3am without a Slack message.",
+    tags: ['nocturnal','mysterious','focused','infra','hidden','precise'],
+  },
+  {
+    id: 'penguin',
+    name: 'Emperor Penguin',
+    giving: "it's giving waddling through it together",
+    desc: "Survives -60°C Antarctic winters by standing in a communal huddle, rotating so everyone gets warm. Nobody makes it through alone. The Penguin sprint is the definition of team sport — rotate, support, and you all cross the finish line.",
+    tags: ['determined','team','patient','debt','chill','persistent'],
+  },
+  {
+    id: 'puffin',
+    name: 'Atlantic Puffin',
+    giving: "it's giving tiny menace, enormous delivery",
+    desc: "Looks like a penguin dressed for a gala. Can carry 62 fish in its beak simultaneously. The Puffin sprint punches dramatically above its weight class and looks incredibly stylish doing it. Underestimated every time. Never should be.",
+    tags: ['determined','fast','persistent','bugfix','colorful','scrappy'],
+  },
+  {
+    id: 'blue_footed_booby',
+    name: 'Blue-footed Booby',
+    giving: "it's giving unexplainable confident energy",
+    desc: "The entire mating ritual is just presenting your blue feet and hoping for the best. This sprint has that same confident, slightly unhinged energy. We don't fully understand why the approach works. It works. Ship it.",
+    tags: ['weird','chaotic','colorful','feature','unhinged','discovery'],
+  },
+  {
+    id: 'kookaburra',
+    wikiTitle: 'Laughing kookaburra',
+    name: 'Kookaburra',
+    giving: "it's giving laughing through the chaos",
+    desc: "Makes a sound identical to maniacal laughter at sunrise. This sprint team knows that if you don't laugh at the bugs in production, you'll cry. The Kookaburra team finishes the sprint, looks at each other across the Zoom, and laughs.",
+    tags: ['chaotic','energetic','loud','unhinged','bugfix','team'],
+  },
+  {
+    id: 'lyrebird',
+    name: 'Superb Lyrebird',
+    giving: "it's giving absorbs everything, outputs everything",
+    desc: "Can perfectly mimic chainsaws, camera shutters, car alarms, and other birds. The Lyrebird sprint is a synthesis sprint — gather all inputs, process everything, then produce something that contains multitudes. May sound like a construction site.",
+    tags: ['chaotic','energetic','weird','discovery','loud','curious'],
+  },
+  {
+    id: 'quetzal',
+    name: 'Resplendent Quetzal',
+    giving: "it's giving mythical rare glow-up",
+    desc: "Considered sacred by the ancient Maya. Tail feathers up to a meter long. The Quetzal sprint is a rare gem — people will reference this one for years. A sprint that simply could not exist anywhere else. You are witnessing history.",
+    tags: ['colorful','mysterious','beautiful','discovery','rare','ethereal'],
+  },
+  {
+    id: 'hoopoe',
+    name: 'Eurasian Hoopoe',
+    giving: "it's giving desert royalty, unexpected drip",
+    desc: "Has a crown. Is literally called a Hoopoe. Sacred in ancient Egypt. Was voted Europe's favourite bird. The Hoopoe sprint arrives from seemingly nowhere with incredible energy, solves the thing everyone else ignored, and ascends.",
+    tags: ['colorful','mysterious','weird','discovery','exotic','curious'],
+  },
+  {
+    id: 'mandarin_duck',
+    name: 'Mandarin Duck',
+    giving: "it's giving drip check: fully passed",
+    desc: "Widely considered the most beautiful duck in the world. Arrived exactly like this. The Mandarin Duck sprint understands that aesthetics are non-negotiable — the UI will be beautiful, the code will be clean, and the demo will be iconic.",
+    tags: ['colorful','elegant','beautiful','chill','feature','stylish'],
+  },
+  {
+    id: 'kingfisher',
+    name: 'Common Kingfisher',
+    giving: "it's giving precision strike, get in get out",
+    desc: "Dives at 40km/h, hits the target every single time, is back on the branch before anyone noticed. The Kingfisher sprint is clean execution — targeted, fast, and startlingly beautiful in its efficiency. Zero wasted motion.",
+    tags: ['fast','precise','focused','bugfix','colorful','intense'],
+  },
+  {
+    id: 'albatross',
+    name: 'Wandering Albatross',
+    giving: "it's giving long haul, no shortcuts allowed",
+    desc: "Wingspan of 3.5 meters — largest of any living bird. Can fly for literal years without landing. The Albatross sprint is a marathon disguised as a sprint. Glide efficiently, conserve energy, and trust the very long process.",
+    tags: ['determined','patient','debt','infra','persistent','calm'],
+  },
+  {
+    id: 'pelican',
+    name: 'Brown Pelican',
+    giving: "it's giving big mouth, even bigger backlog",
+    desc: "Holds 3 gallons of water in its expandable pouch. Dives headfirst from 20 meters. The Pelican sprint loaded up an enormous backlog and is now executing a controlled crash dive directly into it. The planning was done. We're in it now.",
+    tags: ['chaotic','powerful','intense','feature','loud','energetic'],
+  },
+  {
+    id: 'roadrunner',
+    name: 'Greater Roadrunner',
+    giving: "it's giving chaos with direction",
+    desc: "Actually reaches 20mph. Is absolutely a real bird. Routinely eats rattlesnakes. The Roadrunner sprint is fast, slightly unhinged, leaves a cartoon dust cloud where it was, and somehow gets there first. Never underestimate.",
+    tags: ['fast','chaotic','determined','bugfix','energetic','weird'],
+  },
+  {
+    id: 'frigatebird',
+    name: 'Magnificent Frigatebird',
+    giving: "it's giving sky pirate, zero regrets",
+    desc: "Steals food from other birds mid-flight as a primary strategy. Can't even land on water despite being a seabird. Lives entirely on its own terms. The Frigatebird sprint is not above borrowing a clever approach. The end result is magnificent.",
+    tags: ['chaotic','intense','powerful','feature','determined','loud'],
+  },
+  {
+    id: 'scarlet_macaw',
+    name: 'Scarlet Macaw',
+    giving: "it's giving loud colors, louder opinions",
+    desc: "Screams. Always. Possibly in multiple languages. The Scarlet Macaw sprint has a lot of strong opinions in standup, a Slack thread that moves at light speed, and ships anyway because the energy is genuinely contagious.",
+    tags: ['loud','colorful','chaotic','feature','energetic','unhinged','hyped'],
+  },
+  {
+    id: 'bald_eagle',
+    name: 'Bald Eagle',
+    giving: "it's giving national importance, high altitude",
+    desc: "Screams from above. Sees everything from 2km away. Delivers. The Bald Eagle sprint has been on the roadmap since Q1 and it is finally, finally happening. This is the sprint that makes the whole product architecture make sense.",
+    tags: ['powerful','focused','intense','feature','determined','loud'],
+  },
+  {
+    id: 'woodpecker',
+    name: 'Pileated Woodpecker',
+    giving: "it's giving relentless, skull full of ambition",
+    desc: "Drums at 20 hits per second and has zero headaches due to specialized skull anatomy. Architecturally dismantles entire trees. The Woodpecker sprint is persistent and structural. It will make a very loud noise until the problem is fully solved.",
+    tags: ['persistent','focused','intense','infra','debt','determined'],
+  },
+  {
+    id: 'swift',
+    name: 'Common Swift',
+    giving: "it's giving airborne for months, no landing required",
+    desc: "Can stay in flight for 10 consecutive months. Eats, sleeps, and mates in the air. The Swift sprint has zero downtime and is not touching ground until the feature is deployed. An engineering marvel. There will be no retro until it's done.",
+    tags: ['fast','focused','intense','infra','determined','nocturnal'],
+  },
+  {
+    id: 'bird_of_paradise',
+    wikiTitle: 'Greater bird-of-paradise',
+    name: 'Bird of Paradise',
+    giving: "it's giving nature said absolutely no limits",
+    desc: "Evolved in isolation until the feature set got completely out of hand — in the best way possible. The Bird of Paradise sprint let design take the wheel and there are zero regrets. The competition's product will look extremely beige.",
+    tags: ['chaotic','colorful','weird','feature','beautiful','unhinged'],
+  },
+  {
+    id: 'victoria_crowned_pigeon',
+    wikiTitle: 'Victoria crowned pigeon',
+    name: 'Victoria Crowned Pigeon',
+    giving: "it's giving royalty that snuck in as a pigeon",
+    desc: "World's largest pigeon. Has an elaborate blue lace crown. Nobody expected the pigeon to show up like this. The Victoria Crowned Pigeon sprint is the surprise drop — looks ordinary on the ticket, turns out to be deeply extraordinary.",
+    tags: ['elegant','colorful','weird','beautiful','discovery','calm'],
+  },
+  {
+    id: 'bee_eater',
+    name: 'European Bee-eater',
+    giving: "it's giving precision, pure color, absolute slay",
+    desc: "Catches bees in mid-flight, rubs out the stinger methodically before eating, then does it again. Has completely solved the bee problem. The Bee-eater sprint handles dangerous components with elegance and ships the most beautiful result.",
+    tags: ['precise','colorful','focused','fast','feature','elegant'],
+  },
+  {
+    id: 'sandhill_crane',
+    name: 'Sandhill Crane',
+    giving: "it's giving elegant migration, team sport",
+    desc: "Migrates in enormous flocks. Mates for life. Has a prehistoric rattling call that carries for miles. The Sandhill Crane sprint is a team movement — everyone migrating in the same direction, in formation, toward something meaningful.",
+    tags: ['determined','team','elegant','feature','patient','beautiful'],
+  },
+  {
+    id: 'spoonbill',
+    name: 'Roseate Spoonbill',
+    giving: "it's giving pink energy, chaotic toolkit, results",
+    desc: "Has a spoon for a face and swings it through water at random until food appears. Somehow this works every time. The Spoonbill sprint has an unconventional methodology that looks chaotic from the outside and consistently delivers pink-tinted magic.",
+    tags: ['chaotic','colorful','weird','discovery','chill','team'],
+  },
+  {
+    id: 'macaroni_penguin',
+    name: 'Macaroni Penguin',
+    giving: "it's giving pasta head unhinged icon",
+    desc: "Has bright yellow-orange eyebrow plumes that look exactly like pasta. Named after 18th century fashion. The Macaroni Penguin sprint is iconic for reasons that genuinely cannot be explained. The team has matching energy. 'And called it macaroni.'",
+    tags: ['chaotic','weird','colorful','unhinged','team','bugfix'],
+  },
+  {
+    id: 'nuthatch',
+    name: 'White-breasted Nuthatch',
+    giving: "it's giving upside-down on everything, thriving",
+    desc: "The only bird that routinely walks headfirst down tree trunks as its primary method of movement. Simply chose a different perspective. The Nuthatch sprint approaches the problem from the angle nobody else tried and finds something everyone missed.",
+    tags: ['weird','curious','discovery','focused','persistent','calm'],
+  },
+  {
+    id: 'frogmouth',
+    name: 'Tawny Frogmouth',
+    giving: "it's giving branch cosplay as a coping mechanism",
+    desc: "Disguises itself as a broken branch so convincingly the images look photoshopped. The Frogmouth sprint is deep in stealth mode — under the radar, blending in, quietly accumulating wins. The demo reveal will be genuinely shocking.",
+    tags: ['hidden','nocturnal','mysterious','infra','chill','weird'],
+  },
+  {
+    id: 'robin',
+    name: 'American Robin',
+    giving: "it's giving fresh start, spring has arrived",
+    desc: "First bird of spring, every spring, reliably. Shows up exactly when needed. The Robin sprint is a new beginning — first sprint on a new project, or a reset after a brutal quarter. The red chest is hope. Things are genuinely looking up.",
+    tags: ['hopeful','energetic','feature','determined','calm','fresh'],
+  },
+  {
+    id: 'bearded_vulture',
+    name: 'Bearded Vulture',
+    giving: "it's giving drop the bone from height and extract value",
+    desc: "Drops bones from great heights onto rocks to crack them and eat the marrow — the part nobody else wanted. Also stains its feathers orange with iron-rich soil for style reasons. Extracts value from where others saw nothing. Underrated icon.",
+    tags: ['determined','cleanup','debt','intense','weird','focused'],
+  },
+  {
+    id: 'blue_jay',
+    name: 'Blue Jay',
+    giving: "it's giving bold, loud, and actually right",
+    desc: "Extremely loud. Will argue with a hawk. Has strong opinions about everything. Is usually correct. The Blue Jay sprint knows its architecture decisions are correct and is not afraid to defend them at volume. PR comments will be substantial.",
+    tags: ['loud','colorful','energetic','focused','feature','bold'],
+  },
+  {
+    id: 'cardinal',
+    name: 'Northern Cardinal',
+    giving: "it's giving one pop of color that changes everything",
+    desc: "One cardinal in a grey winter scene and suddenly it's a painting. The Cardinal sprint is that feature — the one that sounds small in the ticket but makes the whole product click. Visual impact. Emotional resonance. Zero unnecessary scope.",
+    tags: ['colorful','focused','feature','elegant','bold','determined'],
+  },
+  {
+    id: 'nighthawk',
+    name: 'Common Nighthawk',
+    giving: "it's giving nocturnal grind season",
+    desc: "Active at dusk. Invisible during the day. The Nighthawk sprint operates in the hours when Slack is quiet and git commits speak louder than standups. Something significant is being built in the dark. The morning reveals it fully formed.",
+    tags: ['nocturnal','mysterious','hidden','infra','focused','intense'],
+  },
+  {
+    id: 'swift_parrot',
+    name: 'Swift Parrot',
+    giving: "it's giving fast, endangered, not slowing down",
+    desc: "Fastest parrot alive. Critically endangered. Shows up every year anyway and gets the job done. The Swift Parrot sprint is racing against the clock with full awareness and full commitment. Nothing about this sprint is casual. Everything matters.",
+    tags: ['fast','intense','colorful','determined','feature','focused'],
+  },
+  {
+    id: 'wren',
+    name: 'Pacific Wren',
+    giving: "it's giving smallest and most opinionated",
+    desc: "Among the smallest birds on Earth. Has one of the loudest songs relative to body size. The Wren sprint underestimated nothing, argued about everything in planning, and shipped the cleanest code in the codebase. Size is completely irrelevant.",
+    tags: ['small','intense','determined','bugfix','persistent','loud'],
+  },
+  {
+    id: 'spoonbill_eurasian',
+    name: 'Eurasian Spoonbill',
+    giving: "it's giving elegant chaos, yes both",
+    desc: "Completely white. Has a spoon. Sweeps gracefully through water. The Eurasian Spoonbill sprint is elegant in execution and chaotic in planning, and somehow the elegance wins. People will say it looked effortless. It was not effortless.",
+    tags: ['elegant','chaotic','chill','discovery','beautiful','team'],
+  },
+  {
+    id: 'shoebill_alt',
+    wikiTitle: 'Shoebill',
+    name: 'Whale-headed Stork',
+    giving: "it's giving motionless... then suddenly EVERYTHING",
+    desc: "Alternate name for the Shoebill — because one name wasn't enough for this energy. Stands motionless in swamp for hours. Blinks once. Then strikes with the force of a revelation. This sprint had one week of planning silence and then shipped six features.",
+    tags: ['focused','patient','intense','powerful','mysterious','dino'],
+  },
+  {
+    id: 'hornbill',
+    name: 'Great Hornbill',
+    giving: "it's giving casque on the head, unbothered",
+    desc: "Has a massive yellow casque on top of its beak for no structural reason — scientists think it's purely for display. The Great Hornbill sprint carries some extra weight that looks unnecessary but makes the whole thing more impressive somehow.",
+    tags: ['colorful','weird','bold','feature','loud','powerful'],
+  },
+  {
+    id: 'sunbird',
+    name: 'Malachite Sunbird',
+    giving: "it's giving iridescent green excellence",
+    desc: "Metallic emerald green from beak to tail. Africa's answer to the hummingbird. The Malachite Sunbird sprint moves fast, looks incredible, and pollinates everything it touches. Every ticket it closes makes the next sprint better.",
+    tags: ['fast','colorful','elegant','feature','energetic','beautiful'],
+  },
+  {
+    id: 'ibis',
+    name: 'Scarlet Ibis',
+    giving: "it's giving scarlet, no apologies",
+    desc: "The most vivid red of any bird. Gets its color from the same place flamingos get pink: from eating things. The Scarlet Ibis sprint commits completely to its color — no hedging, no off-ramps, pure commitment to the chosen direction.",
+    tags: ['colorful','determined','bold','feature','loud','beautiful'],
+  },
+  {
+    id: 'anhinga',
+    name: 'Anhinga',
+    giving: "it's giving spread out to dry, recovering",
+    desc: "Dives deep, gets completely soaked because its feathers aren't waterproof by design, then stands with wings spread to dry in the sun. The Anhinga sprint came out the other side a bit waterlogged but is spreading out in the retrospective sun.",
+    tags: ['chill','weird','patient','debt','determined','calm'],
+  },
+
+  // ── 100 new birds ──────────────────────────────
+  {
+    id: 'bar_tailed_godwit',
+    wikiTitle: 'Bar-tailed godwit',
+    name: 'Bar-tailed Godwit',
+    giving: "it's giving 11,000km non-stop, zero excuses",
+    desc: "Holds the world record for longest non-stop migration — 11,000km from Alaska to New Zealand without eating, drinking, or sleeping. Its organs literally shrink mid-flight to fuel the journey. The Bar-tailed Godwit sprint has one mode: airborne until landed. No standups mid-flight.",
+    tags: ['determined','intense','fast','feature','infra','persistent'],
+  },
+  {
+    id: 'arctic_tern',
+    name: 'Arctic Tern',
+    giving: "it's giving sees more sunlight than any creature alive",
+    desc: "Migrates pole to pole every year — up to 70,000km round trip. Sees two summers annually and more daylight than any other animal on Earth. The Arctic Tern sprint spans the full scope of the product and somehow still finishes ahead of schedule.",
+    tags: ['determined','fast','intense','feature','energetic','persistent'],
+  },
+  {
+    id: 'kea',
+    name: 'Kea',
+    giving: "it's giving alpine genius who also destroyed your car",
+    desc: "World's only alpine parrot. Intelligent enough to solve multi-step puzzle boxes. Also systematically dismantles car windshield wipers for entertainment. The Kea sprint approaches every problem from an angle nobody predicted, solves it brilliantly, and removes one thing that seemed load-bearing.",
+    tags: ['chaotic','curious','smart','discovery','weird','determined'],
+  },
+  {
+    id: 'northern_gannet',
+    name: 'Northern Gannet',
+    giving: "it's giving 100mph commitment, no mid-stoop pivots",
+    desc: "Spots fish from 40 meters, folds wings, and hits water at 100mph. Eyes are positioned forward for perfect binocular dive precision. Air sacs under the skin cushion the impact. The Gannet sprint commits completely to the chosen architecture. Trust the angle.",
+    tags: ['fast','focused','precise','intense','feature','determined'],
+  },
+  {
+    id: 'painted_bunting',
+    name: 'Painted Bunting',
+    giving: "it's giving paint.exe ran with no budget limits",
+    desc: "The most colorful bird in North America: blue head, red underparts, green back. Each color region was apparently designed independently with no design review. The Painted Bunting sprint had a design system and chose to use every token simultaneously. Correct.",
+    tags: ['colorful','beautiful','feature','bold','energetic','elegant'],
+  },
+  {
+    id: 'green_heron',
+    name: 'Green Heron',
+    giving: "it's giving built a tool to catch the fish first",
+    desc: "One of the rare birds that uses bait — places insects or leaves on the water surface to lure fish to striking distance. Uses tools. The Green Heron sprint built an internal utility before solving the actual problem. Two deliverables shipped. Efficiency.",
+    tags: ['smart','focused','discovery','patient','curious','infra'],
+  },
+  {
+    id: 'whooping_crane',
+    name: 'Whooping Crane',
+    giving: "it's giving 15 individuals to 800, comeback unlocked",
+    desc: "Down to 15 birds in 1941. Now over 800, recovered through decades of intensive intervention. Tallest bird in North America. The Whooping Crane sprint inherited a codebase at critical failure and shipped a full system turnaround. Against all prior assessments.",
+    tags: ['determined','persistent','hopeful','feature','powerful','rare'],
+  },
+  {
+    id: 'sunbittern',
+    name: 'Sunbittern',
+    giving: "it's giving hidden reveal that stopped everyone cold",
+    desc: "Looks like a plain brown wading bird. Spreads wings to reveal giant eye-spots mimicking an owl face. The Sunbittern sprint was listed as a maintenance ticket. Demo day revealed it contained six undisclosed features. Scope was always there.",
+    tags: ['mysterious','hidden','weird','feature','discovery','patient'],
+  },
+  {
+    id: 'cock_of_the_rock',
+    wikiTitle: 'Andean cock-of-the-rock',
+    name: 'Cock of the Rock',
+    giving: "it's giving lek energy, stakeholders are watching",
+    desc: "Males gather at competitive display grounds and perform simultaneously to be selected by females. Neon orange crest, slate wings. The Cock of the Rock sprint is a demo-day sprint — every ticket is a performance. All eyes are on the stage.",
+    tags: ['colorful','loud','chaotic','feature','energetic','bold'],
+  },
+  {
+    id: 'three_wattled_bellbird',
+    wikiTitle: 'Three-wattled bellbird',
+    name: 'Three-wattled Bellbird',
+    giving: "it's giving loudest bird in the Americas, warranted",
+    desc: "Loudest bird in the Western Hemisphere at over 100 decibels close range. Has three fleshy wattles dangling from the beak like abstract art. The Bellbird sprint announces itself. The launch email thread will be long. The Slack announcement will ping everyone.",
+    tags: ['loud','intense','chaotic','feature','energetic','bold'],
+  },
+  {
+    id: 'purple_gallinule',
+    name: 'Purple Gallinule',
+    giving: "it's giving iridescent, walks on water, fully unbothered",
+    desc: "Walks across floating lily pads using enormous toes that distribute weight across the surface. Iridescent blue-purple body with a candy-corn beak. The Purple Gallinule sprint operates on infrastructure that shouldn't support the load. It distributes perfectly.",
+    tags: ['colorful','elegant','weird','discovery','focused','beautiful'],
+  },
+  {
+    id: 'harris_hawk',
+    wikiTitle: "Harris's hawk",
+    name: "Harris's Hawk",
+    giving: "it's giving cooperative hunt, distinct roles, one result",
+    desc: "The only raptor that hunts in organized cooperative packs — one flushes, one blocks, one strikes. No redundant effort. The Harris's Hawk sprint had distinct responsibilities, zero overlap, and the prey had nowhere to go. Perfect squad execution.",
+    tags: ['focused','team','fast','intense','bugfix','determined'],
+  },
+  {
+    id: 'long_tailed_widowbird',
+    name: 'Long-tailed Widowbird',
+    giving: "it's giving tail 3x body length, worth every pixel",
+    desc: "Males grow tails three times their body length during mating season. Flight is measurably impaired. They grow them anyway because the display is that important. The Long-tailed Widowbird sprint carried significant overhead and shipped the most memorable demo of the quarter.",
+    tags: ['bold','colorful','chaotic','feature','weird','intense'],
+  },
+  {
+    id: 'reddish_egret',
+    name: 'Reddish Egret',
+    giving: "it's giving chaotic fishing dance, catches more than anyone",
+    desc: "Hunts by sprinting, spinning, spreading wings like an umbrella, and generally moving like something has gone wrong. Catches more fish than its composed relatives. The Reddish Egret sprint has an unusual process that concerned everyone in planning and exceeded every metric in review.",
+    tags: ['chaotic','energetic','weird','bugfix','determined','fast'],
+  },
+  {
+    id: 'rockhopper_penguin',
+    name: 'Rockhopper Penguin',
+    giving: "it's giving jumps everywhere instead of walking, iconic",
+    desc: "Rather than waddling like sensible penguins, the Rockhopper hops — up cliff faces, over boulders, between rocks. Has spiky yellow eyebrows that communicate constant mild outrage. The Rockhopper sprint chose the harder path, arrived at the same destination, and looked better doing it.",
+    tags: ['determined','energetic','weird','infra','persistent','fast'],
+  },
+  {
+    id: 'gentoo_penguin',
+    name: 'Gentoo Penguin',
+    giving: "it's giving fastest swimmer in the bird division",
+    desc: "Fastest swimming bird alive at 22mph. Builds pebble nests and is documented stealing pebbles from neighbors. The Gentoo sprint is pure underwater velocity — no flights, no detours, just efficient execution and some dependency borrowing that everyone quietly noticed.",
+    tags: ['fast','focused','energetic','feature','determined','precise'],
+  },
+  {
+    id: 'black_swan',
+    name: 'Black Swan',
+    giving: "it's giving nobody expected this, changes everything",
+    desc: "Europeans assumed for centuries all swans were white — until the Dutch reached Australia in 1697. The Black Swan became the philosophical metaphor for high-impact unforeseen events. This sprint was not on the roadmap. It redefines the product.",
+    tags: ['mysterious','weird','powerful','discovery','rare','chaotic'],
+  },
+  {
+    id: 'hawfinch',
+    name: 'Hawfinch',
+    giving: "it's giving 50kg of bite force, quiet about it",
+    desc: "Can apply 50 kilograms of crushing force through its beak to crack olive and cherry stones. One of Europe's most secretive birds — widespread but rarely observed. The Hawfinch sprint solved the hardest problem in the backlog without announcing it.",
+    tags: ['powerful','focused','hidden','patient','mysterious','infra'],
+  },
+  {
+    id: 'wood_duck',
+    name: 'Wood Duck',
+    giving: "it's giving most beautiful duck, also jumps from trees",
+    desc: "Nests in tree cavities up to 15 meters high. On their first day of life, ducklings leap out and bounce. Considered among the most beautiful ducks on Earth. The Wood Duck sprint shipped extraordinary features on day one from a completely unconventional starting point.",
+    tags: ['colorful','beautiful','fast','feature','bold','energetic'],
+  },
+  {
+    id: 'burrowing_owl',
+    name: 'Burrowing Owl',
+    giving: "it's giving underground ops, rattlesnake voice activated",
+    desc: "Lives in underground burrows, often repurposed from prairie dogs. When threatened, can mimic a rattlesnake from inside the burrow. Tiny, fierce, territorial. The Burrowing Owl sprint runs from a non-standard environment and defends its position with alarming effectiveness.",
+    tags: ['hidden','nocturnal','weird','infra','determined','mysterious'],
+  },
+  {
+    id: 'snowy_egret',
+    name: 'Snowy Egret',
+    giving: "it's giving white gloves, golden slippers, don't test it",
+    desc: "Pure white plumage, bright golden feet it shuffles through water to disturb fish. Hunted to near-extinction in the 1800s for its feathers alone. The Snowy Egret sprint looks impossibly elegant. No stakeholder sees what's coming until the fish is already gone.",
+    tags: ['elegant','beautiful','focused','precise','determined','feature'],
+  },
+  {
+    id: 'gouldian_finch',
+    name: "Gouldian Finch",
+    giving: "it's giving color system complete, no further input required",
+    desc: "Three distinct head color morphs — red, yellow, or black — in the same species. Body is always turquoise, purple, and green regardless. Exists in Australia. The Gouldian Finch sprint didn't need a design system. It arrived as the design system.",
+    tags: ['colorful','beautiful','feature','bold','elegant','weird'],
+  },
+  {
+    id: 'kiwi',
+    wikiTitle: 'Brown kiwi',
+    name: 'Brown Kiwi',
+    giving: "it's giving night shift, smells out the answer",
+    desc: "Only bird with nostrils at the tip of its beak — finds food entirely by smell in total darkness. Lays an egg 20% of its body weight, equivalent proportionally to a human giving birth to a six-year-old. The Kiwi sprint is built differently. The output is enormous relative to visible effort.",
+    tags: ['nocturnal','weird','determined','persistent','infra','focused'],
+  },
+  {
+    id: 'takahe',
+    name: 'Takahē',
+    giving: "it's giving thought extinct for 50 years, still here",
+    desc: "Declared extinct in 1898. Rediscovered alive in a remote New Zealand valley in 1948. Still endangered but persisting. The Takahē sprint is the legacy codebase sprint — everyone assumed it was dead, it just needed someone to go look in the right directory.",
+    tags: ['determined','persistent','weird','debt','rare','hopeful'],
+  },
+  {
+    id: 'weka',
+    name: 'Weka',
+    giving: "it's giving flightless, extremely curious, has your keys",
+    desc: "Flightless New Zealand rail. Intensely curious — walks into tents and takes anything shiny. Researchers have had car keys stolen by Wekas. The Weka sprint investigated every corner of the codebase, took what it needed without asking, and delivered with zero explanation.",
+    tags: ['chaotic','curious','weird','discovery','energetic','determined'],
+  },
+  {
+    id: 'sword_billed_hummingbird',
+    name: 'Sword-billed Hummingbird',
+    giving: "it's giving only tool that fits the one flower",
+    desc: "The only bird in the world with a beak longer than its body. Evolved to reach a single species of Andean flower that no other bird can access. Mutual dependency. The Sword-billed Hummingbird sprint built an integration so specialized it unlocks exactly one problem — which is now completely solved.",
+    tags: ['precise','focused','weird','feature','discovery','determined'],
+  },
+  {
+    id: 'red_billed_quelea',
+    name: 'Red-billed Quelea',
+    giving: "it's giving billion-strong murmuration, scales infinitely",
+    desc: "The most numerous wild bird on Earth — flocks exceed one billion individuals. Murmurations so dense they block out the sun. The Red-billed Quelea sprint is the large-team sprint: extraordinary individual coordination, emergent behavior at scale, and an output that is genuinely awe-inspiring from any vantage point.",
+    tags: ['chaotic','energetic','loud','team','feature','colorful'],
+  },
+  {
+    id: 'snowy_sheathbill',
+    name: 'Snowy Sheathbill',
+    giving: "it's giving the only bird doing the job nobody else wanted",
+    desc: "Antarctica's only land bird with no webbed feet. Subsists on penguin feces, afterbirth, and carrion. Fills the scavenger niche nobody else claimed. The Sheathbill sprint is pure tech debt — entirely thankless, structurally essential, and the ecosystem would collapse without it.",
+    tags: ['debt','determined','weird','infra','persistent','patient'],
+  },
+  {
+    id: 'jacana',
+    name: 'Northern Jacana',
+    giving: "it's giving walks on lily pads, males raise the kids",
+    desc: "Females are larger, more aggressive, and hold territories. Males build nests, incubate eggs, and raise chicks — often tucking eggs under wing-flaps to carry them while walking on floating vegetation. The Jacana sprint reversed the expected roles and the results were significantly better.",
+    tags: ['weird','colorful','chaotic','feature','team','curious'],
+  },
+  {
+    id: 'golden_eagle',
+    name: 'Golden Eagle',
+    giving: "it's giving mountain king, fastest dive of the eagles",
+    desc: "Can reach 200mph in a dive. Large enough to take full-grown deer and mountain goats. Has been used by Kazakh nomads for wolf hunting for millennia. The Golden Eagle sprint drops from altitude, locks onto the critical path, and delivers maximum impact before anything else notices.",
+    tags: ['powerful','fast','intense','focused','feature','determined'],
+  },
+  {
+    id: 'oystercatcher',
+    name: 'Eurasian Oystercatcher',
+    giving: "it's giving two techniques, learned from parents, passed down",
+    desc: "Has a beak shaped for two distinct strategies: stabbing or hammering bivalves. Young oystercatchers must be taught which method by their parents — the skill is culturally transmitted across generations. The Oystercatcher sprint carries institutional knowledge. Onboarding is the feature.",
+    tags: ['focused','precise','determined','infra','patient','team'],
+  },
+  {
+    id: 'rifleman',
+    wikiTitle: 'New Zealand rifleman',
+    name: 'Rifleman',
+    giving: "it's giving New Zealand's smallest bird, enormous output",
+    desc: "New Zealand's smallest bird at 6cm. Males flash iridescent green so bright they look like flying emeralds. Females are a perfect brown camouflage. The Rifleman sprint is the smallest ticket that turned into the highest-value delivery of the quarter. Size is not the metric.",
+    tags: ['fast','energetic','focused','feature','small','colorful'],
+  },
+  {
+    id: 'kokako',
+    name: 'Kōkako',
+    giving: "it's giving glides more than it flies, mournful and majestic",
+    desc: "Has weak wings and glides between trees rather than flying. Has a haunting, flute-like call considered one of the most beautiful bird songs in the world. The Kōkako sprint moves at its own pace, covers the same ground differently, and leaves a sound in the codebase that persists long after.",
+    tags: ['elegant','mysterious','chill','debt','patient','beautiful'],
+  },
+  {
+    id: 'laysan_albatross',
+    name: 'Laysan Albatross',
+    giving: "it's giving dances for years before committing",
+    desc: "Young Laysan Albatrosses spend up to five years perfecting an elaborate synchronised dance before choosing a mate for life. The dance has specific moves and must be learned and matched. The Laysan Albatross sprint had an extremely long discovery phase. The architecture is perfect. No changes.",
+    tags: ['patient','elegant','determined','discovery','team','calm'],
+  },
+  {
+    id: 'african_fish_eagle',
+    wikiTitle: 'African fish eagle',
+    name: 'African Fish Eagle',
+    giving: "it's giving call that IS the sound of an entire continent",
+    desc: "Its cry is so distinctive it's been called the 'Voice of Africa' — instantly recognizable, carries for kilometers. Dives from a perch, snatches fish from the surface with talons, returns to eat. The African Fish Eagle sprint has a signature everyone recognizes. The result arrives without warning.",
+    tags: ['powerful','focused','fast','feature','determined','iconic'],
+  },
+  {
+    id: 'greater_sage_grouse',
+    name: 'Greater Sage-Grouse',
+    giving: "it's giving inflated chest, dramatic entrance, everyone stares",
+    desc: "Males inflate yellow air sacs on their chest and make a loud gurgling pop in a choreographed display at communal leks every spring. Has been doing this in the same meadows for thousands of years. The Sage-Grouse sprint has a very dramatic kickoff. Everyone attends. The spectacle is real.",
+    tags: ['loud','colorful','chaotic','weird','feature','energetic'],
+  },
+  {
+    id: 'bobolink',
+    name: 'Bobolink',
+    giving: "it's giving 20,000km migration, solo, no GPS",
+    desc: "Migrates over 20,000km round trip from North America to South America. Has magnetic crystals in its skull that navigate using Earth's magnetic field. The Bobolink sprint runs independently with internal orientation. No external dependencies. The destination is always correct.",
+    tags: ['determined','fast','focused','infra','persistent','mysterious'],
+  },
+  {
+    id: 'wandering_tattler',
+    name: 'Wandering Tattler',
+    giving: "it's giving found everywhere, recognized by nobody",
+    desc: "Breeds in remote Alaskan mountain streams and winters across every Pacific island group. Ubiquitous across the Pacific and consistently overlooked. The Wandering Tattler sprint is the invisible infrastructure sprint — running everywhere, named by almost nobody, quietly essential.",
+    tags: ['infra','hidden','chill','patient','determined','calm'],
+  },
+  {
+    id: 'red_knot',
+    name: 'Red Knot',
+    giving: "it's giving doubles weight before the launch, sprints anyway",
+    desc: "Before migrating, the Red Knot doubles its body weight in two weeks. Organs shrink to make room for fat stores. Flies 11,000km non-stop on this fuel. The Red Knot sprint front-loads all preparation obsessively, then executes a single continuous run to delivery with zero context switches.",
+    tags: ['determined','intense','fast','persistent','feature','infra'],
+  },
+  {
+    id: 'dunlin',
+    name: 'Dunlin',
+    giving: "it's giving murmuration synchrony at 400 birds per second",
+    desc: "Forms murmurations of hundreds of thousands that move as a single fluid organism. Response time between birds is 15 milliseconds. The coordination is not led — it's emergent. The Dunlin sprint is the fully-async distributed team sprint. Nobody is in charge. Everything ships.",
+    tags: ['team','chaotic','energetic','fast','infra','determined'],
+  },
+  {
+    id: 'avocet',
+    name: 'American Avocet',
+    giving: "it's giving upswept bill, sweeps the whole surface",
+    desc: "Has an elegant upward-curved beak that sweeps side-to-side through shallow water. Changes from grey winter plumage to bright rust-orange for breeding. The Avocet sprint covers the full surface area of the problem with an elegant, sweeping approach that catches everything in its path.",
+    tags: ['elegant','focused','determined','discovery','colorful','beautiful'],
+  },
+  {
+    id: 'little_blue_penguin',
+    wikiTitle: 'Little blue penguin',
+    name: 'Little Blue Penguin',
+    giving: "it's giving world's smallest penguin, world's biggest confidence",
+    desc: "Smallest penguin species at 33cm. Parades home from sea to its burrow every evening in a group for safety. The Fairy Penguin sprint is underestimated at every planning session and reliably outperforms. The evening parade home is a ceremony worth attending.",
+    tags: ['small','determined','chill','team','persistent','focused'],
+  },
+  {
+    id: 'african_penguin',
+    name: 'African Penguin',
+    giving: "it's giving only penguin in Africa, fully committed to the bit",
+    desc: "The only penguin species in Africa, thriving on the Benguela Current. Makes a sound identical to a donkey's bray. Called the 'jackass penguin' by sailors. The African Penguin sprint operates in a non-standard environment and sounds chaotic in standups. Delivery is always serious.",
+    tags: ['weird','loud','determined','persistent','team','bugfix'],
+  },
+  {
+    id: 'black_browed_albatross',
+    name: 'Black-browed Albatross',
+    giving: "it's giving eyebrows locked in permanent disapproval",
+    desc: "Bold black eyebrow stripe gives it a permanent expression of judgmental disappointment. Nests in massive colonies on Antarctic islands. The Black-browed Albatross sprint radiates quiet disapproval for every process violation but ships consistently, every year, into the wind.",
+    tags: ['determined','patient','intense','infra','calm','persistent'],
+  },
+  {
+    id: 'turquoise_cotinga',
+    name: 'Turquoise Cotinga',
+    giving: "it's giving iridescent blue that doesn't seem real",
+    desc: "Males are a structural iridescent turquoise so intense they appear backlit. Females are brown. The contrast is complete. The Turquoise Cotinga sprint has one team member whose contribution makes the entire result look illuminated. The rest of the team knows who it is.",
+    tags: ['colorful','beautiful','mysterious','feature','elegant','rare'],
+  },
+  {
+    id: 'magnificent_riflebird',
+    name: 'Magnificent Riflebird',
+    giving: "it's giving velvet wings, performance as engineering",
+    desc: "Male fans iridescent velvet-black wings into a perfect circle frame. Performs a synchronized dance with the female who mirrors his moves. The Riflebird sprint is built as a performance — every component was designed to be seen. The architecture is the feature.",
+    tags: ['colorful','beautiful','feature','elegant','bold','loud'],
+  },
+  {
+    id: 'clark_nutcracker',
+    name: "Clark's Nutcracker",
+    giving: "it's giving caches 30,000 seeds, remembers all of them",
+    desc: "Stores up to 30,000 pine seeds across hundreds of cache sites and retrieves them months later with extraordinary accuracy using spatial memory. Reforests mountains as a side effect. The Clark's Nutcracker sprint built exhaustive documentation and the next team launched three features from it.",
+    tags: ['focused','smart','patient','infra','determined','discovery'],
+  },
+  {
+    id: 'american_dipper',
+    name: 'American Dipper',
+    giving: "it's giving walks underwater, dips constantly, unbothered",
+    desc: "Only aquatic songbird in North America — literally walks along riverbeds underwater. Blinks a white eyelid and dips its whole body rhythmically for no fully understood reason. The Dipper sprint operates in an environment everyone said was unsuitable. It dips. It delivers.",
+    tags: ['weird','determined','infra','focused','persistent','chill'],
+  },
+  {
+    id: 'red_crossbill',
+    name: 'Red Crossbill',
+    giving: "it's giving evolved specifically for one lock, one key",
+    desc: "Beak crosses at the tip — evolved to pry open pine cones with a twisting motion. Nomadic: follows cone crops across continents. The Red Crossbill sprint built one specialized tool for one deeply specific problem. It works better than anything else that exists for this exact task.",
+    tags: ['focused','precise','weird','infra','determined','fast'],
+  },
+  {
+    id: 'cedar_waxwing',
+    name: 'Cedar Waxwing',
+    giving: "it's giving passes berries to teammates, mutual care",
+    desc: "Cedar Waxwings famously pass food down a row of perched birds until each one has eaten. Sleek crested design, waxy red wing tips. The Cedar Waxwing sprint distributes credit, knowledge, and recognition as evenly as it distributes food. Everyone gets fed before anyone is full.",
+    tags: ['team','elegant','colorful','chill','feature','patient'],
+  },
+  {
+    id: 'american_bittern',
+    name: 'American Bittern',
+    giving: "it's giving blends into reeds, you walked past it twice",
+    desc: "Freezes with beak pointed skyward and sways like a reed in wind when threatened. The camouflage is nearly perfect. Has been standing in the same codebase corner for years. The American Bittern sprint is the feature hiding in plain sight in the existing architecture. Just look at the reeds.",
+    tags: ['hidden','mysterious','patient','infra','chill','focused'],
+  },
+  {
+    id: 'trumpeter_swan',
+    name: 'Trumpeter Swan',
+    giving: "it's giving heaviest NA bird, loudest voice in the room",
+    desc: "Heaviest native bird in North America at 12kg. Its call — a deep, resonant trumpet — carries across entire lakes. Near-extinct in 1935, now recovered. The Trumpeter Swan sprint has the biggest footprint in the system, announces its presence clearly, and simply cannot be missed.",
+    tags: ['loud','powerful','determined','feature','bold','hopeful'],
+  },
+  {
+    id: 'white_ibis',
+    name: 'White Ibis',
+    giving: "it's giving urban adaptation complete, thriving anyway",
+    desc: "Highly adaptable wading bird that moved into cities when wetlands disappeared, foraging in parks and parking lots. Entirely unbothered by the urban environment. The White Ibis sprint encountered deprecated dependencies and found workarounds for every single one without changing the interface.",
+    tags: ['determined','weird','chill','debt','infra','persistent'],
+  },
+  {
+    id: 'american_avocet',
+    wikiTitle: 'American avocet',
+    name: 'American Avocet — Breeding',
+    giving: "it's giving grey to rust in one molt, full transformation arc",
+    desc: "Switches from silver-grey to vivid rust-orange head and neck during breeding season. Same bird, completely different energy. The Avocet Breeding sprint is the product going into launch mode — the system was always this capable. The color just had to change.",
+    tags: ['colorful','elegant','feature','transformation','bold','energetic'],
+  },
+  {
+    id: 'california_condor',
+    name: 'California Condor',
+    giving: "it's giving 3m wingspan, back from the brink of deletion",
+    desc: "Largest flying bird in North America — 3-meter wingspan, 12kg. Went extinct in the wild in 1987 (27 birds in captivity total). Now over 500. The California Condor sprint was a complete rebuild from captive snapshots. It flies. It is majestic. The old architecture is preserved in its bones.",
+    tags: ['powerful','determined','rare','infra','debt','hopeful'],
+  },
+  {
+    id: 'limpkin',
+    name: 'Limpkin',
+    giving: "it's giving one skill, absolute mastery, screaming about it",
+    desc: "Eats almost exclusively apple snails. Has a beak curved specifically to extract them from shells. Screams at top volume during breeding season, earning names like 'crying bird' and 'wailing bird.' The Limpkin sprint has one job, performs it with complete mastery, and is loud about the progress.",
+    tags: ['focused','loud','weird','bugfix','determined','precise'],
+  },
+  {
+    id: 'cuckoo',
+    wikiTitle: 'Common cuckoo',
+    name: 'Common Cuckoo',
+    giving: "it's giving lays egg in someone else's repo",
+    desc: "The Common Cuckoo lays its eggs in other birds' nests and leaves them to raise its young. The chick hatches early and ejects all other eggs. The Cuckoo sprint identified an existing service, contributed exactly one well-placed feature, and let the host team do the integration work.",
+    tags: ['chaotic','mysterious','hidden','feature','smart','weird'],
+  },
+  {
+    id: 'osprey',
+    name: 'Osprey',
+    giving: "it's giving feet rotate 180°, grips fish from any angle",
+    desc: "Has a reversible outer toe that rotates backward to grip fish from any angle. Only hawk that dives feet-first into water. 70% dive success rate. The Osprey sprint approaches the problem from whatever angle the data presents and closes tickets at an unusually high success rate.",
+    tags: ['focused','fast','precise','determined','feature','bugfix'],
+  },
+  {
+    id: 'merlin',
+    name: 'Merlin',
+    giving: "it's giving small falcon, huge aggression, crows fear it",
+    desc: "A small but intensely aggressive falcon that routinely chases birds twice its size and wins. Has moved into cities and learned to hunt in urban environments. The Merlin sprint has no respect for ticket size. Large blockers do not actually intimidate it.",
+    tags: ['intense','fast','determined','bugfix','focused','bold'],
+  },
+  {
+    id: 'anna_hummingbird',
+    wikiTitle: "Anna's hummingbird",
+    name: "Anna's Hummingbird",
+    giving: "it's giving fastest heartbeat, fastest thought",
+    desc: "Fastest heartbeat of any endotherm relative to body size — 1,260 beats per minute during flight. Makes a sharp metallic squeak. Males dive from 30m at 385 body-lengths per second — the fastest recorded movement relative to size in vertebrates. The Anna's sprint: smallest ticket, highest velocity.",
+    tags: ['fast','intense','focused','feature','energetic','colorful'],
+  },
+  {
+    id: 'eurasian_jay',
+    name: 'Eurasian Jay',
+    giving: "it's giving hides 5,000 acorns, finds every one",
+    desc: "Buries up to 5,000 acorns each autumn in separate caches across its territory and retrieves them accurately through winter using spatial memory. Is directly responsible for forest regeneration across Europe. The Eurasian Jay sprint planted architecture for three future sprints while completing this one.",
+    tags: ['smart','focused','patient','infra','determined','discovery'],
+  },
+  {
+    id: 'superb_starling',
+    name: 'Superb Starling',
+    giving: "it's giving African plains iridescence, colony that feeds everyone",
+    desc: "Metallic blue-green body, rusty-orange belly, white chest band. Lives in highly cooperative colonies where unrelated helpers assist in raising chicks. The Superb Starling sprint cross-functional by design — engineers helped on QA, QA helped on docs, docs helped on design. It shows.",
+    tags: ['colorful','team','energetic','feature','bold','beautiful'],
+  },
+  {
+    id: 'rainbow_lorikeet',
+    name: 'Rainbow Lorikeet',
+    giving: "it's giving every color at once, loudly, in your garden",
+    desc: "Head is blue, chest is orange-red, belly is green, back is green with yellow. Has a brush-tipped tongue for nectar. Is an extremely loud daily presence wherever it lives. The Rainbow Lorikeet sprint brought every discipline together simultaneously and was not quiet about any of it.",
+    tags: ['colorful','loud','chaotic','energetic','feature','bold'],
+  },
+  {
+    id: 'sulphur_crested_cockatoo',
+    name: 'Sulphur-crested Cockatoo',
+    giving: "it's giving 80 years old, still screaming, still learning",
+    desc: "Lives up to 80 years in captivity. Has been documented teaching itself to unlock latches — and teaching the technique to neighbors within weeks. Iconic white plumage, yellow crest raised when excited. The Cockatoo sprint carries institutional knowledge from 2016 and is still actively learning new tricks.",
+    tags: ['chaotic','loud','smart','determined','weird','feature'],
+  },
+  {
+    id: 'glossy_ibis',
+    name: 'Glossy Ibis',
+    giving: "it's giving iridescent in the right light, overlooked otherwise",
+    desc: "Appears plain brown in flat light. In direct sun, shifts to deep copper, purple, and green iridescence. Expanding its range to new continents. The Glossy Ibis sprint was marked low priority in the ticket. Under direct stakeholder attention, it was clearly the sprint of the quarter.",
+    tags: ['mysterious','hidden','beautiful','determined','colorful','feature'],
+  },
+  {
+    id: 'pied_kingfisher',
+    name: 'Pied Kingfisher',
+    giving: "it's giving hovers in place, then strikes with certainty",
+    desc: "Only kingfisher that hovers in mid-air independently without needing a perch. Can hunt over large open water. Black and white geometric patterning. The Pied Kingfisher sprint does not need a stable base to operate. It holds position in uncertainty and strikes when the window opens.",
+    tags: ['focused','precise','fast','intense','bugfix','determined'],
+  },
+  {
+    id: 'shoebill_night',
+    wikiTitle: 'Shoebill',
+    name: 'Shoebill — Night Mode',
+    giving: "it's giving 2am commit, nobody saw, everything changed",
+    desc: "The Shoebill is largely crepuscular — most active at dawn and dusk. Has been documented hunting lungfish in pitch darkness using the lateral line equivalent of sonar. The Night Mode sprint runs in the hours when Slack is off and the git log shows timestamps that raise questions.",
+    tags: ['nocturnal','mysterious','focused','infra','intense','hidden'],
+  },
+  {
+    id: 'hooded_merganser',
+    name: 'Hooded Merganser',
+    giving: "it's giving deployable crest, context-dependent presentation",
+    desc: "Has a large fan-shaped white crest it can raise or lower instantly depending on social context. Uses different tactics for diving — serrated beak grips fish underwater. The Hooded Merganser sprint adjusts its communication style based on the audience but the technical execution is identical.",
+    tags: ['focused','elegant','determined','feature','precise','colorful'],
+  },
+  {
+    id: 'martial_eagle',
+    name: 'Martial Eagle',
+    giving: "it's giving highest-soaring, sees the whole board from up there",
+    desc: "Africa's largest eagle. Soars at extreme altitude using thermals and can spot prey from 6km away. Vision so acute it can see a rabbit from the edge of the atmosphere, effectively. The Martial Eagle sprint starts with six weeks of silent observation. Then it lands on the solution.",
+    tags: ['powerful','focused','patient','intense','discovery','determined'],
+  },
+  {
+    id: 'spangled_cotinga',
+    name: 'Spangled Cotinga',
+    giving: "it's giving electric blue, just sitting there being correct",
+    desc: "Males are vivid electric blue with a purple throat patch. Sit motionless at the tops of tall trees and simply exist at that color intensity. The Spangled Cotinga sprint has a very small ticket count, very high visual impact, and requires no justification from anyone.",
+    tags: ['colorful','beautiful','mysterious','chill','feature','elegant'],
+  },
+  {
+    id: 'turaco',
+    wikiTitle: "Livingstone's turaco",
+    name: "Livingstone's Turaco",
+    giving: "it's giving one of the only true green pigments in birds",
+    desc: "One of the only birds with a genuine green pigment (turacoverdin) rather than structural colour. Its crimson wing feathers contain copper-based turacin. The Turacos own something fundamentally different at the molecular level. The Turaco sprint has a genuine technological moat, not a trick.",
+    tags: ['colorful','rare','focused','feature','beautiful','determined'],
+  },
+  {
+    id: 'common_loon',
+    name: 'Common Loon',
+    giving: "it's giving haunting call across the lake, everything stops",
+    desc: "Its wail carries for miles across lakes and has been used in film as the universal sound of wilderness. Can dive to 60 meters. Transforms from drab brown to a striking black-and-white checked pattern in breeding season. The Loon sprint's launch announcement makes the whole office pause.",
+    tags: ['mysterious','powerful','determined','feature','elegant','nocturnal'],
+  },
+  {
+    id: 'wandering_albatross',
+    wikiTitle: 'Wandering albatross',
+    name: 'Wandering Albatross — Solo',
+    giving: "it's giving years in flight, lands for one reason only",
+    desc: "Spends years at sea without touching land. Has the longest wingspan of any living bird at 3.5 meters. Returns to the same island to breed with the same partner, every other year, for life. The Solo sprint is the infrastructure marathon — no retro until it's done. It lands once. It matters.",
+    tags: ['determined','patient','infra','persistent','chill','calm'],
+  },
+  {
+    id: 'shoebill_v3',
+    wikiTitle: 'Shoebill',
+    name: 'Shoebill — The Verdict',
+    giving: "it's giving six hours of stillness, one moment of judgment",
+    desc: "Classified for decades as either a stork or a pelican relative. Modern genomics placed it in its own order. The debate about what kind of thing it is was resolved by looking more closely. The Verdict sprint paused the existing classification, ran the analysis, and shipped a new taxonomy.",
+    tags: ['mysterious','focused','discovery','patient','dino','precise'],
+  },
+  {
+    id: 'violet_backed_starling',
+    name: 'Violet-backed Starling',
+    giving: "it's giving angle-dependent iridescence, changes with perspective",
+    desc: "Appears completely different depending on the angle of light — purple, violet, white, or silver. The same bird looks different to everyone in the room. The Violet-backed Starling sprint delivered something that each stakeholder described differently. All descriptions were correct.",
+    tags: ['beautiful','mysterious','colorful','elegant','feature','discovery'],
+  },
+  {
+    id: 'bengali_weaver',
+    wikiTitle: 'Baya weaver',
+    name: 'Baya Weaver',
+    giving: "it's giving 500-loop woven nest, architectural flex",
+    desc: "Males weave elaborate hanging nests from grass blades using over 500 separate woven loops. Each nest takes weeks. Females inspect them and reject substandard work. The Baya Weaver sprint has extraordinarily high code review standards. Multiple PRs have been closed and resubmitted from scratch.",
+    tags: ['focused','precise','determined','infra','patient','feature'],
+  },
+  {
+    id: 'malleefowl',
+    name: 'Malleefowl',
+    giving: "it's giving self-regulating compost incubator, built by one bird",
+    desc: "Builds a mound of compost and soil up to a meter high that generates heat for incubating eggs. The male monitors temperature with its beak and adds or removes material to maintain 33°C exactly, for months. The Malleefowl sprint built its own CI/CD pipeline from scratch and monitors it manually.",
+    tags: ['patient','determined','weird','infra','focused','precise'],
+  },
+  {
+    id: 'greater_honeyguide',
+    name: 'Greater Honeyguide',
+    giving: "it's giving leads humans to beehives, takes its cut",
+    desc: "Actively guides humans and honey badgers to beehives by flying ahead and calling. After the hive is broken open, it eats the wax and larvae. Cross-species collaboration with negotiated mutual benefit. The Honeyguide sprint partnered with an external team, shared the work, and took the wax.",
+    tags: ['smart','curious','discovery','team','determined','weird'],
+  },
+  {
+    id: 'painted_stork',
+    name: 'Painted Stork',
+    giving: "it's giving pink gradient wing tips, colonial nesting, organized chaos",
+    desc: "Breeds in huge mixed-species colonies and uses tactile hunting — wades with beak open, snaps shut when it feels movement. Pink-tipped tertiary feathers. The Painted Stork sprint works in a multi-team environment, processes inputs in real time, and has the best visual output in the roadmap.",
+    tags: ['colorful','team','chaotic','patient','feature','precise'],
+  },
+  {
+    id: 'indian_roller',
+    name: 'Indian Roller',
+    giving: "it's giving aerial roll in breeding display, pure flex",
+    desc: "Named for the rolling display flight males perform during courtship — full aerial rolls while calling loudly. Considered sacred in several South Asian traditions. Electric blue wings visible only in flight. The Indian Roller sprint had a memorable mid-sprint pivot that turned out to be exactly right.",
+    tags: ['colorful','energetic','bold','chaotic','feature','beautiful'],
+  },
+  {
+    id: 'jacobin_hummingbird',
+    name: 'White-necked Jacobin',
+    giving: "it's giving females dress as males to avoid harassment",
+    desc: "Some females of this species adopt male plumage to avoid aggressive male behavior during feeding. They feed more efficiently and with less interruption. The Jacobin sprint realized the current process was inefficient, changed the interface, and velocity immediately improved.",
+    tags: ['smart','focused','fast','discovery','weird','feature'],
+  },
+  {
+    id: 'wheatear',
+    name: 'Northern Wheatear',
+    giving: "it's giving Alaska to Africa non-stop, 5g bird",
+    desc: "A bird that weighs 25 grams migrates from Alaska to sub-Saharan Africa — one of the longest migrations relative to body size. Uses the same migration corridor as Ice Age ancestors. The Wheatear sprint scales with no additional resources. The existing architecture was always capable of this.",
+    tags: ['determined','fast','persistent','infra','focused','intense'],
+  },
+  {
+    id: 'curlew',
+    wikiTitle: 'Eurasian curlew',
+    name: 'Eurasian Curlew',
+    giving: "it's giving call that defined the moor, now threatened",
+    desc: "Its haunting, bubbling call defines the atmosphere of moorland across Europe and Asia. Populations in serious decline. Uses its long downcurved bill to probe deep into mud for invertebrates nobody else can reach. The Curlew sprint goes deeper than any other into the infrastructure sediment.",
+    tags: ['mysterious','determined','focused','infra','patient','debt'],
+  },
+  {
+    id: 'spix_macaw',
+    name: "Spix's Macaw",
+    giving: "it's giving thought extinct in wild, carefully rebuilt",
+    desc: "Once the rarest bird in the world — declared extinct in the wild in 2000 with one wild male remaining. Reintroduced in Brazil in 2022 from captive-bred individuals. The Spix's Macaw sprint is the replatforming sprint: the original runs in captivity, a new wild instance was just deployed.",
+    tags: ['rare','determined','hopeful','feature','colorful','infra'],
+  },
+  {
+    id: 'superb_fairywren',
+    name: 'Superb Fairywren',
+    giving: "it's giving electric blue males, cooperative group defense",
+    desc: "Males are brilliant electric blue during breeding season. Females help each other raise chicks across a cooperative family group. Has been documented teaching songs to unborn chicks inside the egg. The Fairywren sprint has team documentation so thorough that new members shipped on day one.",
+    tags: ['colorful','team','fast','feature','energetic','beautiful'],
+  },
+  {
+    id: 'satin_bowerbird',
+    name: 'Satin Bowerbird',
+    giving: "it's giving built an entire architecture just for the demo",
+    desc: "Males build and decorate elaborate bowers — structures with no function other than impressing females. Steals blue objects obsessively because females prefer blue. Practices in private before performing. The Satin Bowerbird sprint spent three days on the demo environment. It was worth it.",
+    tags: ['colorful','feature','determined','bold','smart','curious'],
+  },
+  {
+    id: 'helmeted_hornbill',
+    name: 'Helmeted Hornbill',
+    giving: "it's giving solid ivory casque, rams rivals mid-air",
+    desc: "The only bird with a solid casque on its beak — used for aerial casque-ramming contests with rivals. The casque is denser than ivory and carved by several cultures. The Helmeted Hornbill sprint resolves architectural debates with direct competitive evidence. Two approaches entered. One shipped.",
+    tags: ['powerful','intense','chaotic','feature','determined','weird'],
+  },
+  {
+    id: 'toco_toucan',
+    name: 'Toco Toucan',
+    giving: "it's giving largest beak proportionally, actually useful thermostat",
+    desc: "The largest beak proportionally of any bird. Used as a thermoregulation device — blood flow through the beak increases or decreases to dump or retain heat. The enormous tool has a practical function nobody expected. The Toco Toucan sprint shipped a feature that turned out to be load-bearing infrastructure.",
+    tags: ['colorful','weird','determined','infra','feature','bold'],
+  },
+  {
+    id: 'secretary_bird_sprint',
+    wikiTitle: 'Secretarybird',
+    name: 'Secretary Bird — The Kick',
+    giving: "it's giving 195 Newtons, five times body weight, one strike",
+    desc: "Measured kick force: 195 Newtons — five times the bird's own body weight. Strikes in 15 milliseconds, faster than a blink. Walks 20-30km per day through the savanna locating targets. The Kick sprint spent the full sprint walking the codebase and resolved six blockers on the last day.",
+    tags: ['determined','focused','intense','bugfix','powerful','fast'],
+  },
+  {
+    id: 'blue_crane',
+    wikiTitle: 'Blue crane',
+    name: 'Blue Crane',
+    giving: "it's giving South Africa's national bird, elegant threat display",
+    desc: "South Africa's national bird. Steel-blue grey, long flowing feathers, striking threat display where wings are spread and neck extended. Performs elaborate duet dances with its mate. The Blue Crane sprint has a very clear owner, a formal threat response protocol, and ships paired features.",
+    tags: ['elegant','determined','powerful','feature','team','beautiful'],
+  },
+  {
+    id: 'white_throated_dipper',
+    wikiTitle: 'White-throated dipper',
+    name: 'White-throated Dipper',
+    giving: "it's giving sings in winter, loudest when conditions are worst",
+    desc: "Sings its full song during the harshest winter months while walking underwater in freezing rivers. One of the few birds that sings year-round. The White-throated Dipper sprint is the one nobody wanted — mid-December, difficult conditions — and it sang the whole way through.",
+    tags: ['determined','persistent','infra','focused','calm','intense'],
+  },
+  {
+    id: 'long_eared_owl',
+    name: 'Long-eared Owl',
+    giving: "it's giving ear tufts are not ears, still hears everything",
+    desc: "The 'ear' tufts are purely for display — its actual ears are hidden asymmetrically on its skull for 3D sound location. Can pinpoint a mouse under 30cm of snow. The Long-eared Owl sprint operates in a noisy environment. The signal detection is exceptional despite the noise.",
+    tags: ['nocturnal','focused','mysterious','infra','patient','precise'],
+  },
+  {
+    id: 'barn_swallow',
+    name: 'Barn Swallow',
+    giving: "it's giving most widespread swallow, arrives before spring does",
+    desc: "Most widely distributed swallow on Earth. Has expanded its range by following human structures for nesting. Arrives in the UK before the meteorological spring begins. The Barn Swallow sprint is always early. It uses existing infrastructure. It is, somehow, on every continent.",
+    tags: ['fast','determined','team','feature','energetic','persistent'],
+  },
+  {
+    id: 'eurasian_wren',
+    wikiTitle: 'Eurasian wren',
+    name: 'Eurasian Wren',
+    giving: "it's giving Europe's loudest bird per gram of body weight",
+    desc: "One of the loudest birds relative to body size in Europe. Weighs 10 grams and produces a song audible 500 meters away. Builds multiple 'cock nests' for the female to choose from. The Eurasian Wren sprint built three proof-of-concepts before scoping began. The team appreciated the options.",
+    tags: ['loud','determined','focused','feature','energetic','persistent'],
+  },
+  {
+    id: 'velvet_scoter',
+    name: 'Velvet Scoter',
+    giving: "it's giving all black, white wing patch, dives deep and returns",
+    desc: "Almost entirely black diving duck with striking white wing patches visible only in flight. Dives up to 30 meters for mollusks. One of the quietest ducks. The Velvet Scoter sprint is the infra sprint that works completely in silence, surfaces with the exact dependencies requested, and disappears again.",
+    tags: ['hidden','infra','focused','patient','determined','calm'],
+  },
+  {
+    id: 'red_tailed_hawk',
+    name: 'Red-tailed Hawk',
+    giving: "it's giving ubiquitous but respected, sound of every film",
+    desc: "The most common hawk in North America. Its scream is used in virtually every film that needs a 'dramatic bird sound' — often for eagles, which don't sound nearly as cinematic. The Red-tailed Hawk sprint is the sprint that runs every quarter. Reliable, respected, the sound of the system working.",
+    tags: ['determined','focused','persistent','feature','powerful','calm'],
+  },
+  {
+    id: 'palm_cockatoo',
+    name: 'Palm Cockatoo',
+    giving: "it's giving uses a stick as a drumstick, rhythmically",
+    desc: "Holds a stick or seedpod in its foot and drums rhythmically on a hollow tree — one of the only non-human animals observed using a tool for rhythmic communication. Males drum to attract females. The Palm Cockatoo sprint schedules the retro and the launch demo at the peak of drum intensity.",
+    tags: ['weird','smart','powerful','feature','chaotic','loud'],
+  },
+  {
+    id: 'magnificent_frigatebird_alt',
+    wikiTitle: 'Magnificent frigatebird',
+    name: 'Magnificent Frigatebird — The Pouch',
+    giving: "it's giving inflates to the size of a basketball, purely for attention",
+    desc: "Males inflate a bright red gular pouch to basketball size during courtship. It takes 20 minutes to inflate. They sit in trees and wait for females to fly overhead. The Frigatebird Pouch sprint spent three sprints on the feature announcement. The feature itself took one afternoon.",
+    tags: ['chaotic','loud','weird','feature','bold','energetic'],
+  },
+  {
+    id: 'shoebill_coda',
+    wikiTitle: 'Shoebill',
+    name: 'Shoebill — Coda',
+    giving: "it's giving bill-clapping as communication, no words needed",
+    desc: "The Shoebill communicates by clapping its massive bill loudly — the sound carries across the swamp. Adults are completely silent otherwise. The Shoebill Coda sprint has one loud moment at launch. Everything leading up to it is documented only in commit messages.",
+    tags: ['mysterious','focused','patient','infra','powerful','precise'],
+  },
+  {
+    id: 'storks_relay',
+    wikiTitle: 'White stork',
+    name: 'White Stork',
+    giving: "it's giving returns to the same chimney every year",
+    desc: "Returns to the same nest on the same chimney or rooftop year after year — sometimes the same nest used for centuries by successive generations. Considered a symbol of good luck across Europe. The White Stork sprint is the annual one: same structure, same team, always produces the thing it always produces.",
+    tags: ['determined','patient','team','feature','hopeful','calm'],
+  },
+  {
+    id: 'shearwater',
+    wikiTitle: 'Sooty shearwater',
+    name: 'Sooty Shearwater',
+    giving: "it's giving 65,000km migration, figure-eight around the whole ocean",
+    desc: "Migrates in a figure-eight loop covering 65,000km annually — one of the longest documented migrations. Uses wind patterns across entire ocean basins for energy-free travel. The Shearwater sprint uses every existing service and platform correctly, adding zero infrastructure and covering enormous ground.",
+    tags: ['determined','fast','infra','patient','persistent','focused'],
+  },
+  {
+    id: 'shoebill_alpha',
+    wikiTitle: 'Shoebill',
+    name: 'Shoebill — Alpha',
+    giving: "it's giving bows as greeting, demands bows back",
+    desc: "Shoebills bow their heads as a greeting display and expect the gesture returned. Failure to reciprocate is noted. The Sprint is a senior stakeholder sprint. Acknowledgment of prior decisions is expected in the opening slides. The bill is watching.",
+    tags: ['intense','patient','mysterious','powerful','focused','dino'],
+  },
+  {
+    id: 'martial_eagle_survey',
+    wikiTitle: 'Martial eagle',
+    name: 'Martial Eagle — Survey',
+    giving: "it's giving thermal-riding overview, sees all the tickets",
+    desc: "Soars on thermals for hours scanning the landscape below before committing to a target. Has been documented soaring for six hours straight. The Survey sprint maps the entire system before the first line is written. The Martial Eagle does not rush the discovery phase.",
+    tags: ['patient','focused','discovery','determined','powerful','calm'],
+  },
+  {
+    id: 'whydah',
+    wikiTitle: 'Pin-tailed whydah',
+    name: 'Pin-tailed Whydah',
+    giving: "it's giving tail 4x body length, seasonally deployed",
+    desc: "Breeding males grow tail feathers four times their body length, shed them after the season, and grow them again the following year. Outside breeding season, indistinguishable from a sparrow. The Pin-tailed Whydah sprint ships one extraordinary feature per cycle and goes quiet otherwise.",
+    tags: ['bold','colorful','weird','feature','determined','mysterious'],
+  },
+  {
+    id: 'eurasian_golden_oriole',
+    name: 'Eurasian Golden Oriole',
+    giving: "it's giving heard constantly, almost never actually seen",
+    desc: "One of Europe's most distinctive bird calls — a fluty, tropical yodel — heard clearly from dense woodland. Extremely difficult to spot despite being bright yellow. The Golden Oriole sprint's outputs are felt throughout the system. The team is hard to find in the org chart.",
+    tags: ['colorful','mysterious','hidden','feature','elegant','determined'],
+  },
+  {
+    id: 'resplendent_cotinga',
+    wikiTitle: 'Banded cotinga',
+    name: 'Banded Cotinga',
+    giving: "it's giving sky blue with purple band, impossible in nature",
+    desc: "The male is a vivid turquoise blue broken only by a purple breast band. Both colours are structural rather than pigment — interference patterns in the feather microstructure. The Cotinga sprint doesn't have a special color palette. The colors emerge from the underlying architecture.",
+    tags: ['colorful','beautiful','mysterious','feature','elegant','rare'],
+  },
+  {
+    id: 'hoatzin',
+    name: 'Hoatzin',
+    giving: "it's giving claws on wings as a chick, ancient design",
+    desc: "Chicks have functional claws on their wings — a trait from dinosaur ancestors — and use them to climb out of the nest, swim, and climb back. Adults have an unusual fermentation-based digestive system. The Hoatzin sprint is running a very old architecture that predates modern frameworks. It works.",
+    tags: ['weird','dino','determined','debt','infra','curious'],
+  },
+  {
+    id: 'pelican_squadron',
+    wikiTitle: 'Brown pelican',
+    name: 'Brown Pelican — Formation',
+    giving: "it's giving V formation cuts wind resistance for everyone behind",
+    desc: "Brown Pelicans fly in formation just above wave height, using ground effect to reduce drag. Each bird benefits from the updraft of the one ahead. The Formation sprint optimized its own workflow and left documentation so thorough that every subsequent sprint runs 30% faster.",
+    tags: ['team','determined','fast','infra','focused','patient'],
+  },
+  {
+    id: 'firecrest',
+    name: 'Firecrest',
+    giving: "it's giving Europe's second smallest bird, striped crown on fire",
+    desc: "One of Europe's smallest birds at 5-7 grams. Has a vivid orange-red crown stripe and a white eyebrow stripe. Constantly active. The Firecrest sprint has the smallest team, the most vivid output, and has not been still since kickoff. It will not slow down for the retro.",
+    tags: ['fast','energetic','colorful','feature','intense','focused'],
+  },
+  {
+    id: 'northern_mockingbird',
+    name: 'Northern Mockingbird',
+    giving: "it's giving 200 songs, all borrowed, fully owned",
+    desc: "Can mimic over 200 distinct bird songs and incorporates new ones throughout its life. Has no original songs. Performs at night under streetlights. The Mockingbird sprint assembled solutions from across the industry, integrated them flawlessly, and presented the result at 2am as if it was always there.",
+    tags: ['chaotic','smart','loud','feature','nocturnal','curious'],
+  },
+  {
+    id: 'snowy_plover',
+    name: 'Snowy Plover',
+    giving: "it's giving broken-wing display, decoy as a feature",
+    desc: "Leads predators away from its nest by performing a convincing broken-wing display — dragging a wing, calling distressed — until the threat is far enough away. Then flies off perfectly. The Snowy Plover sprint deployed a decoy while the real work happened in a parallel branch.",
+    tags: ['smart','hidden','mysterious','bugfix','determined','infra'],
+  },
+  {
+    id: 'wrybill',
+    name: 'Wrybill',
+    giving: "it's giving only bird with a bill that bends sideways",
+    desc: "The only bird in the world with a bill that curves to the right — used to flip stones sideways while searching for invertebrates. Evolved for one specific feeding niche. The Wrybill sprint built a utility that only works in one specific context. That context is critical path.",
+    tags: ['weird','precise','focused','infra','discovery','determined'],
+  },
+  {
+    id: 'shoebill_origin',
+    wikiTitle: 'Shoebill',
+    name: 'Shoebill — Origin',
+    giving: "it's giving 30 million year old fossil record, still relevant",
+    desc: "Shoebill fossil records extend back 30 million years. The basic body plan has not required major revision in three decades of geological time. The Origin sprint is the system design sprint. The architecture is not being changed. The architecture has already survived longer than the organisation.",
+    tags: ['dino','patient','determined','infra','powerful','focused'],
+  },
+  {
+    id: 'spoon_winged_lapwing',
+    wikiTitle: 'Spur-winged lapwing',
+    name: 'Spur-winged Lapwing',
+    giving: "it's giving bony wing spur, will absolutely use it",
+    desc: "Has a sharp bony spur at the bend of each wing. Uses them to fight rivals and defend nests with genuine aggression. Makes a loud metallic alarm call. The Spur-winged Lapwing sprint has a very clear definition of done and will flag any PR that doesn't meet it. Loudly.",
+    tags: ['determined','loud','focused','intense','bugfix','bold'],
+  },
+  {
+    id: 'shoebill_v2',
+    wikiTitle: 'Shoebill',
+    name: 'Shoebill — V2',
+    giving: "it's giving prehistoric, already updated once in 30M years",
+    desc: "Shoebills represent a successful second evolutionary iteration — early ancestors were smaller and more heron-like. The Version Two added the clog-shaped bill, the blue-grey armor plating, and the five-foot frame. The V2 sprint is the redesign that nobody asked for and everyone needed.",
+    tags: ['focused','powerful','feature','dino','intense','determined'],
+  },
+  {
+    id: 'paradise_tanager',
+    name: 'Paradise Tanager',
+    giving: "it's giving nine colors, somehow cohesive",
+    desc: "Has nine distinct color regions: scarlet, sky blue, black, turquoise, yellow-green, blue, purple, green, and red. They cohere completely into something that looks designed. The Paradise Tanager sprint was touched by seven teams. The integration is seamless. Nobody can explain it.",
+    tags: ['colorful','beautiful','weird','feature','team','bold'],
+  },
+  {
+    id: 'kagu',
+    name: 'Kagū',
+    giving: "it's giving crest like a crown, nearly flightless, deeply endangered",
+    desc: "New Caledonia's national bird. Has an elaborate spiky crest, loud nasal call, and unusual spotted wing pattern used in threat displays. Nearly flightless despite having large wings. The Kagū sprint spent the first week building elaborate scaffolding and then shipped entirely by running.",
+    tags: ['weird','determined','rare','discovery','chaotic','bold'],
+  },
+];
+
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let answers       = {};
+let contextTags   = [];
+let contextText   = '';
+let contextEmoji  = '';
+let lastBirdId    = null;
+let screenshotMode = false;
+let seenBirdIds   = new Set();
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════════
+function answer(question, tags) {
+  answers[question] = tags;
+  if      (question === 'q1') showScreen('screen-q2');
+  else if (question === 'q2') showScreen('screen-q3');
+  else if (question === 'q3') showScreen('screen-context');
+}
+
+// ═══════════════════════════════════════════════
+//  CONTEXT (optional step)
+// ═══════════════════════════════════════════════
+function selectEmoji(btn) {
+  document.querySelectorAll('.emoji-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  contextEmoji = btn.textContent.trim();
+  contextTags  = (btn.dataset.tags || '').split(',').filter(Boolean);
+}
+
+function submitContext(skip) {
+  if (!skip) {
+    contextText = (document.getElementById('context-desc').value || '').trim();
+  } else {
+    contextText  = '';
+    contextTags  = [];
+    contextEmoji = '';
+    document.querySelectorAll('.emoji-opt').forEach(b => b.classList.remove('selected'));
+    const ta = document.getElementById('context-desc');
+    if (ta) ta.value = '';
+    document.getElementById('char-count').textContent = '0';
+  }
+  showScreen('screen-loading');
+  setTimeout(findAndShow, 1600);
+}
+
+// ═══════════════════════════════════════════════
+//  MATCHING
+// ═══════════════════════════════════════════════
+function scoreBird(bird) {
+  const allTags = [
+    ...(answers.q1 || []),
+    ...(answers.q2 || []),
+    ...(answers.q3 || []),
+    ...contextTags,
+  ];
+  let score = 0;
+  for (const t of allTags) if (bird.tags.includes(t)) score++;
+
+  // Boost score if context text mentions the bird name or any tag
+  if (contextText) {
+    const lower = contextText.toLowerCase();
+    if (lower.includes(bird.name.toLowerCase())) score += 2;
+    for (const t of bird.tags) if (lower.includes(t)) score += 0.5;
+  }
+
+  return score;
+}
+
+function findAndShow() {
+  // Exclude all birds seen this session; if we've exhausted the pool, reset
+  let pool = BIRDS.filter(b => !seenBirdIds.has(b.id));
+  if (pool.length === 0) { seenBirdIds.clear(); pool = [...BIRDS]; }
+
+  const scored = pool.map(b => ({ bird: b, score: scoreBird(b) + Math.random() * 1.2 }));
+  scored.sort((a, b) => b.score - a.score);
+  const top    = scored.slice(0, 4);
+  const chosen = top[Math.floor(Math.random() * top.length)].bird;
+  seenBirdIds.add(chosen.id);
+  lastBirdId = chosen.id;
+  generateAnimeImage(chosen); // start immediately while loading screen is still showing
+  displayBird(chosen);
+}
+
+// ═══════════════════════════════════════════════
+//  DISPLAY
+// ═══════════════════════════════════════════════
+
+// Label maps for the recap panel
+const Q1_LABELS = {
+  chaotic: '⚡ chaotic but make it fashion',
+  focused: '🎯 locked in, tunnel vision',
+  chill:   '🌊 go with the flow',
+  intense: '🔥 suffer but worth it',
+  mysterious: '🌙 mysterious era',
+};
+const Q2_LABELS = {
+  energetic:  '🤩 literally vibrating',
+  determined: '😤 exhausted but unstoppable',
+  elegant:    '😌 unbothered & zen',
+  chaotic:    '🤪 fully unhinged',
+  focused:    '🫡 in the zone',
+};
+const Q3_LABELS = {
+  feature:   '🚀 big feature drop',
+  bugfix:    '🐛 squashing bugs',
+  debt:      '🧹 tech debt cleanup',
+  discovery: '🔍 discovery / research',
+  infra:     '🔧 infrastructure',
+};
+
+function getLabel(tags, map) {
+  if (!tags) return '—';
+  for (const t of tags) if (map[t]) return map[t];
+  return tags[0] || '—';
+}
+
+function displayBird(bird) {
+  // Card content
+  document.getElementById('bird-name-big').textContent    = bird.name;
+  document.getElementById('bird-giving-line').textContent = bird.giving;
+  document.getElementById('bird-description').textContent = bird.desc;
+  document.getElementById('card-season').textContent      = 'Sprint · ' + new Date().getFullYear();
+
+  const raw = bird.name.replace(/[^a-zA-Z]/g, '');
+  const hashtag = '#' + raw + 'Sprint';
+  document.getElementById('sprint-hashtag').textContent = hashtag;
+
+  // Sprint kit panel
+  document.getElementById('copy-name-val').textContent = bird.name + ' Sprint';
+  document.getElementById('copy-tag-val').textContent  = hashtag;
+
+  // Bird intel panel — split desc into sentences as fact bullets
+  const facts = bird.desc
+    .split(/(?<=[.!?])\s+/)
+    .filter(s => s.trim().length > 10)
+    .slice(0, 4);
+  const factsList = document.getElementById('bird-facts');
+  factsList.innerHTML = facts.map(f => `<li>${f.replace(/\.$/, '')}</li>`).join('');
+
+  // Answers recap
+  const recap = document.getElementById('sprint-recap');
+  const rows = [
+    { label: 'energy',  val: getLabel(answers.q1, Q1_LABELS) },
+    { label: 'mood',    val: getLabel(answers.q2, Q2_LABELS) },
+    { label: 'sprint',  val: getLabel(answers.q3, Q3_LABELS) },
+  ];
+  if (contextEmoji || contextText) {
+    rows.push({ label: 'vibe', val: (contextEmoji ? contextEmoji + ' ' : '') + (contextText ? '"' + contextText.slice(0, 60) + (contextText.length > 60 ? '…' : '') + '"' : '') });
+  }
+  recap.innerHTML = rows.map(r =>
+    `<div class="sprint-recap-row"><strong>${r.label}</strong>${r.val}</div>`
+  ).join('');
+
+  // Card reveal animation
+  const card = document.getElementById('sprint-card');
+  card.classList.remove('reveal-anim');
+  void card.offsetWidth;
+  card.classList.add('reveal-anim');
+
+  currentBird = bird;
+  showScreen('screen-result');
+  generateImage(bird); // real photo → center card
+  // anime already kicked off in findAndShow during loading screen
+}
+
+// ─── Copy helper ───
+function copyText(elId, btn) {
+  const val = document.getElementById(elId).textContent;
+  navigator.clipboard.writeText(val).then(() => {
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = btn.dataset.label || btn.textContent.replace('copied!','copy'); btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  IMAGE  — Wikipedia REST API → Pollinations fallback
+//
+//  Priority:
+//   1. Wikipedia REST API  → real photo, always correct
+//   2. Pollinations AI     → generated, used only if Wikipedia has no image
+//   3. Error state         → retry button
+//
+//  NOTE: fetch() is blocked on file:// in Chrome.
+//  Host the app (Netlify / npx serve .) for images to load.
+// ═══════════════════════════════════════════════
+let currentBird = null;
+
+// ═══════════════════════════════════════════════
+//  ANIME IMAGE — Pollinations with sprint-aware prompt
+// ═══════════════════════════════════════════════
+
+const SPRINT_SCENES = {
+  feature:   'launching a rocket from a futuristic control room, glowing holographic screens everywhere, celebration energy',
+  bugfix:    'in a dark underground server room, surrounded by glitching error messages on screens, wires everywhere, detective mode',
+  debt:      'in a cluttered workshop full of broken machinery and stacked boxes, dust in the air, wearing overalls, renovation chaos',
+  discovery: 'in a vast ancient library surrounded by maps, telescopes, and glowing manuscripts, exploration and wonder',
+  infra:     'deep underground in a massive tunnel system of pipes and cables, maintenance tools in hand, the unsung hero',
+};
+
+const ENERGY_MODS = {
+  chaotic:    'swirling chaos energy, debris mid-air, dynamic action lines',
+  focused:    'single beam of dramatic light cutting through darkness, intense concentration',
+  chill:      'soft golden hour light, peaceful atmosphere, serene mood',
+  intense:    'dramatic storm lighting, high tension, cinematic shadows',
+  mysterious: 'moonlit fog, deep shadows, ethereal glow',
+  energetic:  'lightning sparks, explosive motion blur, high energy',
+  determined: 'iron will aura, clenched fist, horizon in background',
+  loud:       'sound wave rings visible in the air, motion blast lines',
+  fast:       'extreme motion blur streaks, speed lines',
+  patient:    'still water reflection, meditative calm, soft bokeh',
+};
+
+const VIBE_MODS = {
+  '🔥': 'fire and embers floating around',
+  '💀': 'gothic skull motifs, dark energy swirls',
+  '✨': 'sparkles and magic particles everywhere',
+  '🌊': 'water ripples, ocean waves in background',
+  '⚡': 'electrical sparks and lightning bolts',
+  '🌙': 'moonlight, stars, night sky glow',
+  '🎯': 'crosshair overlay, target locked visual effect',
+  '🤪': 'swirling cartoon spirals, confetti, unhinged energy',
+  '🧹': 'floating dust particles, broom, cleaning supplies',
+  '🚀': 'rocket exhaust trails, launch pad glow',
+};
+
+function buildAnimePrompt(bird) {
+  // Determine sprint type from q3 answers
+  const q3 = answers.q3 || [];
+  let sprintType = 'feature';
+  for (const t of ['debt','bugfix','discovery','infra','feature']) {
+    if (q3.includes(t)) { sprintType = t; break; }
+  }
+  const scene = SPRINT_SCENES[sprintType] || SPRINT_SCENES.feature;
+
+  // Determine energy from q1 answers
+  const q1 = answers.q1 || [];
+  let energyKey = 'focused';
+  for (const k of Object.keys(ENERGY_MODS)) {
+    if (q1.includes(k)) { energyKey = k; break; }
+  }
+  const energyMod = ENERGY_MODS[energyKey] || '';
+
+  // Vibe emoji modifier
+  const vibeMod = contextEmoji ? (VIBE_MODS[contextEmoji] || '') : '';
+
+  // Scene: user's own words are the prompt — no translation, no override
+  const sceneDirective = contextText
+    ? contextText.trim().slice(0, 200)  // pass it raw, full weight
+    : scene;                             // fall back to sprint-type scene only if nothing written
+
+  const prompt = [
+    `anime illustration of a ${bird.name}`,
+    sceneDirective,
+    energyMod,
+    vibeMod,
+    'studio ghibli and makoto shinkai art style',
+    'detailed cinematic background',
+    'expressive bird character as protagonist',
+    'no text no watermark no humans',
+  ].filter(Boolean).join(', ');
+
+  return prompt;
+}
+
+async function generateAnimeImage(bird) {
+  const img    = document.getElementById('anime-img');
+  const loader = document.getElementById('anime-loader');
+  const tag    = document.getElementById('anime-prompt-tag');
+  if (!img || !loader) return;
+
+  // Reset panel to loading state
+  loader.style.display = 'flex';
+  img.style.display = 'none';
+  img.onload = null;   // detach previous handlers before clearing src
+  img.onerror = null;
+  img.src = '';
+  if (tag) { tag.style.display = 'none'; tag.textContent = ''; }
+
+  const prompt = buildAnimePrompt(bird);
+  const seed   = Math.floor(Math.random() * 999999);
+
+  // Rotating messages so it doesn't look frozen
+  const loadingLines = [
+    'painting your sprint...',
+    'consulting the bird council...',
+    'mixing anime pigments...',
+    'sketching the background...',
+    'adding dramatic lighting...',
+    'rendering feathers...',
+    'applying studio ghibli filter...',
+    'almost there...',
+  ];
+  let msgIdx = 0;
+  loader.innerHTML = `<div class="spinner-ring"></div><span id="anime-loading-msg">${loadingLines[0]}</span><span id="anime-loading-prompt"></span>`;
+
+  // Show prompt hint after 1s so user knows what's generating
+  setTimeout(() => {
+    const el = document.getElementById('anime-loading-prompt');
+    if (el) el.textContent = `"${prompt.slice(0, 80)}${prompt.length > 80 ? '…' : ''}"`;
+  }, 1000);
+
+  const msgTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % loadingLines.length;
+    const el = document.getElementById('anime-loading-msg');
+    if (el) el.textContent = loadingLines[msgIdx];
+  }, 3000);
+  const fallbackPrompt = `anime illustration of a ${bird.name}, studio ghibli style, cinematic, no text`;
+  const makeUrl = (p) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=512&height=640&nologo=true&seed=${seed}`;
+
+  // Track which bird this request is for — ignore stale responses after reroll
+  const requestId = seed;
+  generateAnimeImage._requestId = requestId;
+  let usedFallback = false;
+
+  const timeout = setTimeout(() => {
+    clearInterval(msgTimer);
+    if (generateAnimeImage._requestId !== requestId) return;
+    if (!usedFallback) {
+      // Auto-retry once with simpler prompt before giving up
+      usedFallback = true;
+      const el = document.getElementById('anime-loading-msg');
+      if (el) el.textContent = 'retrying with simpler prompt...';
+      img.src = makeUrl(fallbackPrompt);
+      // Give it another 45s
+      setTimeout(() => {
+        if (generateAnimeImage._requestId !== requestId) return;
+        clearInterval(msgTimer);
+        loader.innerHTML = `<span style="font-size:2rem">🎨</span><span>timed out</span><button onclick="generateAnimeImage(currentBird)" style="margin-top:0.4rem;background:rgba(200,242,62,0.1);border:1px solid rgba(200,242,62,0.3);color:var(--lime);font-family:inherit;font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:100px;cursor:pointer;">↺ retry</button>`;
+      }, 45000);
+    } else {
+      loader.innerHTML = `<span style="font-size:2rem">🎨</span><span>timed out</span><button onclick="generateAnimeImage(currentBird)" style="margin-top:0.4rem;background:rgba(200,242,62,0.1);border:1px solid rgba(200,242,62,0.3);color:var(--lime);font-family:inherit;font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:100px;cursor:pointer;">↺ retry</button>`;
+    }
+  }, 45000);
+
+  img.onload = () => {
+    clearTimeout(timeout);
+    clearInterval(msgTimer);
+    if (generateAnimeImage._requestId !== requestId) return; // stale, discard
+    loader.style.display = 'none';
+    img.style.display = 'block';
+    if (tag) {
+      const q3 = answers.q3 || [];
+      let sprintType = 'feature';
+      for (const t of ['debt','bugfix','discovery','infra','feature']) {
+        if (q3.includes(t)) { sprintType = t; break; }
+      }
+      const labels = { feature:'feature drop', bugfix:'bug hunt', debt:'tech debt cleanup', discovery:'discovery mode', infra:'infra work' };
+      tag.textContent = `✦ ${bird.name} · ${labels[sprintType] || sprintType}`;
+      tag.style.display = 'block';
+    }
+  };
+
+  img.onerror = () => {
+    if (generateAnimeImage._requestId !== requestId) return;
+    if (!usedFallback) {
+      // First failure — silently retry with simpler prompt
+      usedFallback = true;
+      const el = document.getElementById('anime-loading-msg');
+      if (el) el.textContent = 'retrying...';
+      img.src = makeUrl(fallbackPrompt);
+    } else {
+      clearTimeout(timeout);
+      clearInterval(msgTimer);
+      loader.innerHTML = `<span style="font-size:2rem">🎨</span><span>portrait unavailable</span><button onclick="generateAnimeImage(currentBird)" style="margin-top:0.4rem;background:rgba(200,242,62,0.1);border:1px solid rgba(200,242,62,0.3);color:var(--lime);font-family:inherit;font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:100px;cursor:pointer;">↺ retry</button>`;
+    }
+  };
+
+  img.src = makeUrl(prompt);
+}
+
+async function generateImage(bird) {
+  const img    = document.getElementById('bird-img');
+  const loader = document.getElementById('img-loader');
+  setLoader(loader, 'loading photo...');
+  img.style.display = 'none';
+  img.src = '';
+
+  // Wikipedia REST API — returns JSON with thumbnail.source
+  const wikiTitle = bird.wikiTitle || bird.name;
+  const wikiApi   = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`;
+
+  try {
+    const resp = await fetch(wikiApi);
+    if (!resp.ok) throw new Error('no page');
+    const data = await resp.json();
+
+    if (data.thumbnail && data.thumbnail.source) {
+      // Upgrade to higher resolution: swap out thumbnail size in URL
+      const hiRes = data.thumbnail.source.replace(/\/\d+px-/, '/800px-');
+      loadImg(img, loader, hiRes, data.thumbnail.source); // try hi-res, fallback to original
+      return;
+    }
+  } catch (e) { /* network blocked (file://) or bird not on Wikipedia */ }
+
+  // Fallback: Pollinations text-to-image
+  setLoader(loader, 'generating portrait...');
+  const seed    = Math.floor(Math.random() * 999999);
+  const prompt  = `photorealistic wildlife photograph of ${bird.name}, natural habitat, dramatic lighting, sharp detail, no text`;
+  const genUrl  = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&model=flux&nologo=true&seed=${seed}`;
+  loadImg(img, loader, genUrl, null);
+}
+
+// Load an image, with optional fallback URL if first fails
+function loadImg(img, loader, url, fallbackUrl) {
+  const timeout = setTimeout(() => {
+    img.onload = img.onerror = null;
+    if (fallbackUrl) loadImg(img, loader, fallbackUrl, null);
+    else showImgError();
+  }, 25000);
+
+  img.onload = () => {
+    clearTimeout(timeout);
+    loader.style.display = 'none';
+    img.style.display = 'block';
+  };
+
+  img.onerror = () => {
+    clearTimeout(timeout);
+    if (fallbackUrl) loadImg(img, loader, fallbackUrl, null);
+    else showImgError();
+  };
+
+  img.src = url;
+}
+
+function setLoader(loader, text) {
+  loader.style.display = 'flex';
+  loader.innerHTML = `<div class="spinner-ring"></div><span style="color:var(--muted);font-size:0.82rem">${text}</span>`;
+}
+
+function showImgError() {
+  const loader = document.getElementById('img-loader');
+  loader.innerHTML = `
+    <span style="font-size:3rem">🐦</span>
+    <span style="color:var(--muted);font-size:0.82rem">portrait unavailable</span>
+    <button onclick="generateImage(currentBird)"
+      style="margin-top:0.5rem;background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);color:#a78bfa;font-family:inherit;font-size:0.8rem;padding:0.4rem 0.9rem;border-radius:100px;cursor:pointer;">
+      ↺ retry
+    </button>`;
+}
+
+// ═══════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════
+function reroll() {
+  showScreen('screen-loading');
+  setTimeout(findAndShow, 1600);
+}
+
+function resetAll() {
+  answers      = {};
+  contextTags  = [];
+  contextText  = '';
+  contextEmoji = '';
+  lastBirdId   = null;
+  seenBirdIds  = new Set();
+  if (screenshotMode) toggleScreenshot();
+  showScreen('screen-intro');
+}
+
+function toggleScreenshot() {
+  screenshotMode = !screenshotMode;
+  document.body.classList.toggle('screenshot-mode', screenshotMode);
+  const btn = document.querySelector('.result-action-stack .btn-secondary:nth-child(2)');
+  if (btn) btn.textContent = screenshotMode ? '✕ exit card view' : '📸 card view';
+}
+
+// ═══════════════════════════════════════════════
+//  LOADING ANIMATIONS
+// ═══════════════════════════════════════════════
+const LOAD_EMOJIS = ['🦅','🦩','🦚','🦜','🦤','🦉','🐦','🦆','🦢','🦝'];
+const LOAD_MSGS   = [
+  'cross-referencing your vibes with the bird council...',
+  'consulting ancient bird texts...',
+  'asking the cassowary for permission...',
+  'running bird-to-sprint alignment algorithm...',
+  'the shoebill is thinking...',
+  'negotiating with the potoo...',
+  'checking bird energy frequencies...',
+  'the ravens have voted...',
+];
+let loadEIdx = 0, loadMIdx = 0;
+
+setInterval(() => {
+  const el = document.getElementById('loading-emoji');
+  if (el) { loadEIdx = (loadEIdx + 1) % LOAD_EMOJIS.length; el.textContent = LOAD_EMOJIS[loadEIdx]; }
+}, 280);
+
+setInterval(() => {
+  const el = document.getElementById('loading-sub');
+  if (el) { loadMIdx = (loadMIdx + 1) % LOAD_MSGS.length; el.textContent = LOAD_MSGS[loadMIdx]; }
+}, 950);
+</script>
+</body>
+</html>
